@@ -2,10 +2,11 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool, Header
-from human_interfaces.msg import PersonTracks, PersonTrack
+#from human_interfaces.msg import PersonTracks, PersonTrack
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
+
 
 # from .models.movenet import MoveNetDetector
 
@@ -46,19 +47,20 @@ class HumanDetectorNode(Node):
         # Suscriptor a la cámara
         self.camera_sub = self.create_subscription(
             Image,
-            '/camera/rgb/image_raw',
+            'image_raw', #/kinect/image_raw---/camera/rgb/image_raw
             self.image_callback,
             10
         )
 
         # Publicador de detección de humanos
         self.human_detection_pub = self.create_publisher(Bool, '/human_detection/human_detected', 10)
-        self.human_keypoints_pub = self.create_publisher(PersonTracks, '/human_detection/keypoints', 10)
+        #self.human_keypoints_pub = self.create_publisher(PersonTracks, '/human_detection/keypoints', 10)
         self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image', 10)
 
     def image_callback(self, msg):
         # Convertir la imagen ROS a OpenCV
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         # Realizar la detección
         detections = self.detector.infer(frame)
@@ -66,15 +68,16 @@ class HumanDetectorNode(Node):
         # Publicar si se detectó un humano
         human_detected = Bool()
         human_detected.data = len(detections) > 0
+        
         frame = draw_pose(frame, detections[0]['keypoints']) if len(detections) > 0 else None
         
         self.human_detection_pub.publish(human_detected)
 
         # Publicar los keypoints del humano detectado (si hay alguno)
-        self.publish_keypoints(detections)
+        #self.publish_keypoints(detections)
 
         self.human_pose_image_pub.publish(
-            self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')) if frame is not None else None
+            self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')) #if frame is not None else None
         
 
     def publish_keypoints(self, detections):
