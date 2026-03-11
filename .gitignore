@@ -1,5 +1,9 @@
-*.pt/
+
 models/
 install/
 build/
 log/
+
+*.pt
+*.onnx
+*.pth
