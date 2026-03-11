@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -40,7 +41,7 @@ def draw_pointing_arrow(frame, elbow, wrist):
     cv2.circle(frame, target, 6, (255,0,0), -1)
     return target
 
-def draw_pose(frame, keypoints):
+"""def draw_pose(frame, keypoints):
     for (p0, p1) in SKELETON:
         x0, y0, c0 = keypoints[p0]
         x1, y1, c1 = keypoints[p1]
@@ -49,7 +50,7 @@ def draw_pose(frame, keypoints):
     for (x, y, c) in keypoints:
         if c > 0.3:
             cv2.circle(frame, (int(x), int(y)), 3, (0,0,255), -1)
-    return frame
+    return frame"""
 
 class HumanDetectorNode(Node):
     def __init__(self):
@@ -153,10 +154,10 @@ class HumanDetectorNode(Node):
 
         keypoints = detections[0]['keypoints']
 
-        left_elbow = keypoints[5]
-        left_wrist = keypoints[7]
-        right_elbow = keypoints[6]
-        right_wrist = keypoints[8]
+        left_elbow = keypoints[7]
+        left_wrist = keypoints[9]
+        right_elbow = keypoints[8]
+        right_wrist = keypoints[10]
 
         # Calcular la distancia
         left_active = np.linalg.norm(np.array(left_wrist[:2]) - np.array(left_elbow[:2]))

@@ -1,0 +1,10 @@
+msg/PersonTrack.idl
+msg/PersonTrack.msg
+msg/PersonTracks.idl
+msg/PersonTracks.msg
+srv/DetectPointing.idl
+srv/DetectPointing.srv
+srv/ObjectDescription.idl
+srv/ObjectDescription.srv
+srv/SaveLastFace.idl
+srv/SaveLastFace.srv

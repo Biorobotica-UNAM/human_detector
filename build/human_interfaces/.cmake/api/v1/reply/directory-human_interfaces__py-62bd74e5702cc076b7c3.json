@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "human_interfaces__py",
+		"source" : "/home/angel/human_detection/build/human_interfaces/human_interfaces__py"
+	}
+}

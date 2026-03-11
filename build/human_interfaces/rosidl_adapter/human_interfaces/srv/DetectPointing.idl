@@ -1,0 +1,26 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from human_interfaces/srv/DetectPointing.srv
+// generated code does not contain a copyright notice
+
+#include "sensor_msgs/msg/Image.idl"
+
+module human_interfaces {
+  module srv {
+    struct DetectPointing_Request {
+      uint8 structure_needs_at_least_one_member;
+    };
+    struct DetectPointing_Response {
+      boolean human_detected;
+
+      int32 target_x;
+
+      int32 target_y;
+
+      float target_z;
+
+      string direction;
+
+      sensor_msgs::msg::Image pose_image;
+    };
+  };
+};

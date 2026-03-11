@@ -32,7 +32,10 @@ setup(
             'webcam_image = human_detection.webcam_image:main',
             'person_tracker = human_detection.person_tracker:main',
             'pointing = human_detection.human_detector_node_pointing:main',
+            'pointing_v2 = human_detection.human_detector_node_pointing_V2:main',
             'client = human_detection.pointing_client:main',
+            'object_description = human_detection.object_description:main',
+            'face_detect = human_detection.recog_face:main',
         ],
     },
 )

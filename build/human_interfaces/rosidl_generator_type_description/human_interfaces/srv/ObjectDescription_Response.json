@@ -1,0 +1,26 @@
+{
+  "type_description_msg": {
+    "type_description": {
+      "type_name": "human_interfaces/srv/ObjectDescription_Response",
+      "fields": [
+        {
+          "name": "json_output",
+          "type": {
+            "type_id": 17,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        }
+      ]
+    },
+    "referenced_type_descriptions": []
+  },
+  "type_hashes": [
+    {
+      "type_name": "human_interfaces/srv/ObjectDescription_Response",
+      "hash_string": "RIHS01_16cbe67ffdc78dc50e9077769a2a69c83a04b727a3c7977e6d505513d9d6efe5"
+    }
+  ]
+}

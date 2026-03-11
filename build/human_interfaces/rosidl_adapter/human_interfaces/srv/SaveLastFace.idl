@@ -1,0 +1,17 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from human_interfaces/srv/SaveLastFace.srv
+// generated code does not contain a copyright notice
+
+
+module human_interfaces {
+  module srv {
+    struct SaveLastFace_Request {
+      uint8 structure_needs_at_least_one_member;
+    };
+    struct SaveLastFace_Response {
+      boolean success;
+
+      string message;
+    };
+  };
+};

@@ -1,0 +1,12 @@
+from human_interfaces.srv._detect_pointing import DetectPointing  # noqa: F401
+from human_interfaces.srv._detect_pointing import DetectPointing_Event  # noqa: F401
+from human_interfaces.srv._detect_pointing import DetectPointing_Request  # noqa: F401
+from human_interfaces.srv._detect_pointing import DetectPointing_Response  # noqa: F401
+from human_interfaces.srv._object_description import ObjectDescription  # noqa: F401
+from human_interfaces.srv._object_description import ObjectDescription_Event  # noqa: F401
+from human_interfaces.srv._object_description import ObjectDescription_Request  # noqa: F401
+from human_interfaces.srv._object_description import ObjectDescription_Response  # noqa: F401
+from human_interfaces.srv._save_last_face import SaveLastFace  # noqa: F401
+from human_interfaces.srv._save_last_face import SaveLastFace_Event  # noqa: F401
+from human_interfaces.srv._save_last_face import SaveLastFace_Request  # noqa: F401
+from human_interfaces.srv._save_last_face import SaveLastFace_Response  # noqa: F401

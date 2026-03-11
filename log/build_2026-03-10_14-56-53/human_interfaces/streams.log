@@ -1,0 +1,380 @@
+[0.362s] Invoking command in '/home/angel/human_detection/build/human_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/angel/human_detection/install/human_detection:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/angel/human_detection/src/human_interfaces -DCMAKE_INSTALL_PREFIX=/home/angel/human_detection/install/human_interfaces
+[0.435s] -- The C compiler identification is GNU 13.3.0
+[0.504s] -- The CXX compiler identification is GNU 13.3.0
+[0.528s] -- Detecting C compiler ABI info
+[0.635s] -- Detecting C compiler ABI info - done
+[0.644s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.644s] -- Detecting C compile features
+[0.645s] -- Detecting C compile features - done
+[0.655s] -- Detecting CXX compiler ABI info
+[0.773s] -- Detecting CXX compiler ABI info - done
+[0.782s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.783s] -- Detecting CXX compile features
+[0.783s] -- Detecting CXX compile features - done
+[0.787s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.968s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[1.108s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[1.116s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.186s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.243s] -- Found rosidl_adapter: 4.6.6 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[1.248s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[2.135s] -- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[2.746s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[3.555s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[3.559s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[3.714s] -- Found PythonExtra: /usr/bin/python3  
+[4.202s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[4.287s] -- Configuring done (3.9s)
+[4.343s] -- Generating done (0.0s)
+[4.355s] -- Build files have been written to: /home/angel/human_detection/build/human_interfaces
+[4.368s] Invoked command in '/home/angel/human_detection/build/human_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/angel/human_detection/install/human_detection:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/angel/human_detection/src/human_interfaces -DCMAKE_INSTALL_PREFIX=/home/angel/human_detection/install/human_interfaces
+[4.369s] Invoking command in '/home/angel/human_detection/build/human_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/angel/human_detection/install/human_detection:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/angel/human_detection/build/human_interfaces -- -j16 -l16
+[4.433s] [  1%] [34m[1mGenerating type hashes for ROS interfaces[0m
+[4.442s] [  1%] Built target ament_cmake_python_copy_human_interfaces
+[4.727s] [  1%] Built target human_interfaces__rosidl_generator_type_description
+[4.741s] [  2%] [34m[1mGenerating C code for ROS interfaces[0m
+[4.753s] [  4%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[4.771s] running egg_info
+[4.809s] creating human_interfaces.egg-info
+[4.809s] writing human_interfaces.egg-info/PKG-INFO
+[4.809s] writing dependency_links to human_interfaces.egg-info/dependency_links.txt
+[4.809s] writing top-level names to human_interfaces.egg-info/top_level.txt
+[4.809s] writing manifest file 'human_interfaces.egg-info/SOURCES.txt'
+[4.916s] reading manifest file 'human_interfaces.egg-info/SOURCES.txt'
+[4.917s] writing manifest file 'human_interfaces.egg-info/SOURCES.txt'
+[4.965s] [  4%] Built target ament_cmake_python_build_human_interfaces_egg
+[5.332s] [  4%] Built target human_interfaces__cpp
+[5.440s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/detect_pointing__description.c.o[0m
+[5.440s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/detect_pointing__functions.c.o[0m
+[5.441s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/save_last_face__description.c.o[0m
+[5.441s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/detect_pointing__type_support.c.o[0m
+[5.441s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/object_description__description.c.o[0m
+[5.441s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/object_description__functions.c.o[0m
+[5.441s] [ 13%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/object_description__type_support.c.o[0m
+[5.442s] [ 16%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/save_last_face__functions.c.o[0m
+[5.442s] [ 17%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/msg/detail/person_track__description.c.o[0m
+[5.442s] [ 18%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/msg/detail/person_track__functions.c.o[0m
+[5.442s] [ 20%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/msg/detail/person_tracks__description.c.o[0m
+[5.442s] [ 21%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/msg/detail/person_tracks__functions.c.o[0m
+[5.442s] [ 21%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/srv/detail/save_last_face__type_support.c.o[0m
+[5.443s] [ 22%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/msg/detail/person_track__type_support.c.o[0m
+[5.447s] [ 24%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_c.dir/rosidl_generator_c/human_interfaces/msg/detail/person_tracks__type_support.c.o[0m
+[5.550s] [ 25%] [32m[1mLinking C shared library libhuman_interfaces__rosidl_generator_c.so[0m
+[5.601s] [ 25%] Built target human_interfaces__rosidl_generator_c
+[5.614s] [ 28%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[5.614s] [ 28%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[5.615s] [ 29%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[5.615s] [ 32%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[5.616s] [ 32%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[5.616s] [ 33%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[6.059s] [ 35%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/human_interfaces/msg/person_track__type_support.cpp.o[0m
+[6.060s] [ 36%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/human_interfaces/srv/detect_pointing__type_support.cpp.o[0m
+[6.060s] [ 37%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/human_interfaces/srv/save_last_face__type_support.cpp.o[0m
+[6.060s] [ 39%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/human_interfaces/msg/person_tracks__type_support.cpp.o[0m
+[6.061s] [ 40%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/human_interfaces/srv/object_description__type_support.cpp.o[0m
+[6.078s] [ 44%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/human_interfaces/srv/object_description__type_support.cpp.o[0m
+[6.078s] [ 44%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/human_interfaces/msg/person_track__type_support.cpp.o[0m
+[6.078s] [ 44%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/human_interfaces/srv/detect_pointing__type_support.cpp.o[0m
+[6.078s] [ 45%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/human_interfaces/srv/save_last_face__type_support.cpp.o[0m
+[6.087s] [ 47%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/human_interfaces/msg/person_tracks__type_support.cpp.o[0m
+[6.159s] [ 48%] [32m[1mLinking CXX shared library libhuman_interfaces__rosidl_typesupport_c.so[0m
+[6.182s] [ 55%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/human_interfaces/msg/detail/person_track__type_support.cpp.o[0m
+[6.182s] [ 55%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/human_interfaces/srv/detail/detect_pointing__type_support.cpp.o[0m
+[6.182s] [ 55%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/human_interfaces/srv/detail/save_last_face__type_support.cpp.o[0m
+[6.182s] [ 55%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/human_interfaces/srv/detail/object_description__type_support.cpp.o[0m
+[6.183s] [ 55%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/human_interfaces/msg/detail/person_tracks__type_support.cpp.o[0m
+[6.253s] [ 55%] Built target human_interfaces__rosidl_typesupport_c
+[6.314s] [ 56%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/human_interfaces/msg/detail/person_track__type_support.c.o[0m
+[6.321s] [ 59%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/human_interfaces/srv/detail/detect_pointing__type_support.c.o[0m
+[6.321s] [ 59%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/human_interfaces/srv/detail/object_description__type_support.c.o[0m
+[6.324s] [ 60%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/human_interfaces/srv/detail/save_last_face__type_support.c.o[0m
+[6.448s] [ 62%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/human_interfaces/msg/detail/person_tracks__type_support.c.o[0m
+[6.538s] [ 63%] [32m[1mLinking C shared library libhuman_interfaces__rosidl_typesupport_introspection_c.so[0m
+[6.612s] [ 64%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/human_interfaces/srv/detail/save_last_face__type_support_c.cpp.o[0m
+[6.612s] [ 66%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/human_interfaces/srv/detail/object_description__type_support_c.cpp.o[0m
+[6.613s] [ 67%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/human_interfaces/srv/detail/dds_fastrtps/detect_pointing__type_support.cpp.o[0m
+[6.622s] [ 70%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/human_interfaces/srv/detail/detect_pointing__type_support_c.cpp.o[0m
+[6.622s] [ 70%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/human_interfaces/srv/detail/dds_fastrtps/object_description__type_support.cpp.o[0m
+[6.637s] [ 71%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/human_interfaces/msg/detail/person_track__type_support_c.cpp.o[0m
+[6.646s] [ 72%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/human_interfaces/srv/detail/dds_fastrtps/save_last_face__type_support.cpp.o[0m
+[6.653s] [ 72%] Built target human_interfaces__rosidl_typesupport_introspection_c
+[6.686s] [ 74%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/human_interfaces/msg/detail/dds_fastrtps/person_track__type_support.cpp.o[0m
+[6.805s] [ 75%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/human_interfaces/msg/detail/person_tracks__type_support_c.cpp.o[0m
+[6.816s] [ 77%] [32mBuilding CXX object CMakeFiles/human_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/human_interfaces/msg/detail/dds_fastrtps/person_tracks__type_support.cpp.o[0m
+[6.913s] [ 78%] [32m[1mLinking CXX shared library libhuman_interfaces__rosidl_typesupport_cpp.so[0m
+[7.164s] [ 78%] Built target human_interfaces__rosidl_typesupport_cpp
+[7.167s] [ 79%] [32m[1mLinking CXX shared library libhuman_interfaces__rosidl_typesupport_introspection_cpp.so[0m
+[7.380s] [ 79%] Built target human_interfaces__rosidl_typesupport_introspection_cpp
+[7.616s] [ 81%] [32m[1mLinking CXX shared library libhuman_interfaces__rosidl_typesupport_fastrtps_c.so[0m
+[7.735s] [ 81%] Built target human_interfaces__rosidl_typesupport_fastrtps_c
+[7.748s] [ 82%] [32m[1mLinking CXX shared library libhuman_interfaces__rosidl_typesupport_fastrtps_cpp.so[0m
+[7.843s] [ 82%] Built target human_interfaces__rosidl_typesupport_fastrtps_cpp
+[7.869s] [ 82%] Built target human_interfaces
+[7.896s] [ 83%] [34m[1mGenerating Python code for ROS interfaces[0m
+[8.790s] [ 83%] Built target human_interfaces__py
+[8.815s] [ 90%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_py.dir/rosidl_generator_py/human_interfaces/srv/_detect_pointing_s.c.o[0m
+[8.816s] [ 90%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_py.dir/rosidl_generator_py/human_interfaces/srv/_object_description_s.c.o[0m
+[8.816s] [ 90%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_py.dir/rosidl_generator_py/human_interfaces/msg/_person_track_s.c.o[0m
+[8.816s] [ 90%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_py.dir/rosidl_generator_py/human_interfaces/msg/_person_tracks_s.c.o[0m
+[8.816s] [ 90%] [32mBuilding C object CMakeFiles/human_interfaces__rosidl_generator_py.dir/rosidl_generator_py/human_interfaces/srv/_save_last_face_s.c.o[0m
+[9.017s] [ 91%] [32m[1mLinking C shared library libhuman_interfaces__rosidl_generator_py.so[0m
+[9.080s] [ 91%] Built target human_interfaces__rosidl_generator_py
+[9.107s] [ 95%] [32mBuilding C object CMakeFiles/human_interfaces_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/human_interfaces/_human_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[9.107s] [ 95%] [32mBuilding C object CMakeFiles/human_interfaces_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/human_interfaces/_human_interfaces_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[9.107s] [ 95%] [32mBuilding C object CMakeFiles/human_interfaces_s__rosidl_typesupport_c.dir/rosidl_generator_py/human_interfaces/_human_interfaces_s.ep.rosidl_typesupport_c.c.o[0m
+[9.270s] [ 97%] [32m[1mLinking C shared module rosidl_generator_py/human_interfaces/human_interfaces_s__rosidl_typesupport_introspection_c.so[0m
+[9.273s] [ 98%] [32m[1mLinking C shared module rosidl_generator_py/human_interfaces/human_interfaces_s__rosidl_typesupport_c.so[0m
+[9.276s] [100%] [32m[1mLinking C shared module rosidl_generator_py/human_interfaces/human_interfaces_s__rosidl_typesupport_fastrtps_c.so[0m
+[9.319s] [100%] Built target human_interfaces_s__rosidl_typesupport_introspection_c
+[9.319s] [100%] Built target human_interfaces_s__rosidl_typesupport_c
+[9.328s] [100%] Built target human_interfaces_s__rosidl_typesupport_fastrtps_c
+[9.346s] Invoked command in '/home/angel/human_detection/build/human_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/angel/human_detection/install/human_detection:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/angel/human_detection/build/human_interfaces -- -j16 -l16
+[9.357s] Invoking command in '/home/angel/human_detection/build/human_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/angel/human_detection/install/human_detection:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/angel/human_detection/build/human_interfaces
+[9.370s] -- Install configuration: ""
+[9.370s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/ament_index/resource_index/rosidl_interfaces/human_interfaces
+[9.370s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/DetectPointing.json
+[9.370s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/ObjectDescription.json
+[9.371s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/SaveLastFace.json
+[9.371s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/msg/PersonTrack.json
+[9.371s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/msg/PersonTracks.json
+[9.371s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces
+[9.371s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg
+[9.371s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/rosidl_generator_c__visibility_control.h
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__functions.c
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__type_support.c
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__functions.h
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__struct.h
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__description.c
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__type_support.h
+[9.372s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__functions.c
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__functions.h
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__description.c
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__type_support.h
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__struct.h
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__type_support.c
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/person_track.h
+[9.373s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/person_tracks.h
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detect_pointing.h
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__description.c
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__type_support.h
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__type_support.c
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__type_support.c
+[9.374s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__struct.h
+[9.375s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__type_support.h
+[9.375s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__type_support.c
+[9.375s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__functions.c
+[9.375s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__description.c
+[9.375s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__struct.h
+[9.375s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__description.c
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__struct.h
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__type_support.h
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__functions.c
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__functions.h
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__functions.h
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__functions.h
+[9.376s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__functions.c
+[9.377s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/save_last_face.h
+[9.377s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/object_description.h
+[9.377s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/library_path.sh
+[9.377s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/library_path.dsv
+[9.377s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_generator_c.so
+[9.378s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_generator_c.so" to ""
+[9.378s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces
+[9.378s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg
+[9.378s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail
+[9.378s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__rosidl_typesupport_fastrtps_c.h
+[9.378s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__rosidl_typesupport_fastrtps_c.h
+[9.379s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[9.379s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv
+[9.379s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail
+[9.379s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__rosidl_typesupport_fastrtps_c.h
+[9.379s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__rosidl_typesupport_fastrtps_c.h
+[9.379s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__rosidl_typesupport_fastrtps_c.h
+[9.379s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_fastrtps_c.so
+[9.380s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_fastrtps_c.so" to ""
+[9.380s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces
+[9.380s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg
+[9.380s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail
+[9.380s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__type_support.c
+[9.380s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__rosidl_typesupport_introspection_c.h
+[9.380s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__type_support.c
+[9.381s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__rosidl_typesupport_introspection_c.h
+[9.381s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[9.381s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv
+[9.381s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail
+[9.381s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__type_support.c
+[9.381s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__type_support.c
+[9.381s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__rosidl_typesupport_introspection_c.h
+[9.381s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__type_support.c
+[9.381s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__rosidl_typesupport_introspection_c.h
+[9.381s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__rosidl_typesupport_introspection_c.h
+[9.381s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_introspection_c.so
+[9.382s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_introspection_c.so" to ""
+[9.382s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_c.so
+[9.382s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_c.so" to ""
+[9.382s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces
+[9.382s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/person_track.hpp
+[9.383s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__builder.hpp
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__builder.hpp
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__struct.hpp
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__type_support.hpp
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__struct.hpp
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__traits.hpp
+[9.383s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__traits.hpp
+[9.384s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__type_support.hpp
+[9.384s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/rosidl_generator_cpp__visibility_control.hpp
+[9.384s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/person_tracks.hpp
+[9.384s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv
+[9.384s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/object_description.hpp
+[9.384s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detect_pointing.hpp
+[9.384s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/save_last_face.hpp
+[9.385s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__type_support.hpp
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__struct.hpp
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__traits.hpp
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__traits.hpp
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__type_support.hpp
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__builder.hpp
+[9.385s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__traits.hpp
+[9.386s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__type_support.hpp
+[9.386s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__struct.hpp
+[9.386s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__builder.hpp
+[9.386s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__struct.hpp
+[9.386s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__builder.hpp
+[9.386s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces
+[9.386s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg
+[9.387s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[9.387s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail
+[9.387s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__rosidl_typesupport_fastrtps_cpp.hpp
+[9.387s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/dds_fastrtps
+[9.387s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__rosidl_typesupport_fastrtps_cpp.hpp
+[9.387s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv
+[9.387s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail
+[9.387s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/dds_fastrtps
+[9.387s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__rosidl_typesupport_fastrtps_cpp.hpp
+[9.388s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__rosidl_typesupport_fastrtps_cpp.hpp
+[9.388s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__rosidl_typesupport_fastrtps_cpp.hpp
+[9.388s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_fastrtps_cpp.so
+[9.389s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_fastrtps_cpp.so" to ""
+[9.389s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces
+[9.389s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg
+[9.389s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail
+[9.389s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__type_support.cpp
+[9.389s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__rosidl_typesupport_introspection_cpp.hpp
+[9.389s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_tracks__rosidl_typesupport_introspection_cpp.hpp
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/msg/detail/person_track__type_support.cpp
+[9.390s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv
+[9.390s] -- Up-to-date: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__rosidl_typesupport_introspection_cpp.hpp
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/object_description__type_support.cpp
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__rosidl_typesupport_introspection_cpp.hpp
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__rosidl_typesupport_introspection_cpp.hpp
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/detect_pointing__type_support.cpp
+[9.390s] -- Installing: /home/angel/human_detection/install/human_interfaces/include/human_interfaces/human_interfaces/srv/detail/save_last_face__type_support.cpp
+[9.391s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_introspection_cpp.so
+[9.392s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_introspection_cpp.so" to ""
+[9.392s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_cpp.so
+[9.392s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_typesupport_cpp.so" to ""
+[9.392s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/pythonpath.sh
+[9.393s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/pythonpath.dsv
+[9.393s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces-0.0.0-py3.12.egg-info
+[9.393s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces-0.0.0-py3.12.egg-info/top_level.txt
+[9.393s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces-0.0.0-py3.12.egg-info/PKG-INFO
+[9.393s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces-0.0.0-py3.12.egg-info/SOURCES.txt
+[9.393s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces-0.0.0-py3.12.egg-info/dependency_links.txt
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/_human_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/__init__.py
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/_person_track_s.c
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/_person_tracks.py
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/_person_track.py
+[9.394s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/_person_tracks_s.c
+[9.395s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/__init__.py
+[9.395s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/_human_interfaces_s.ep.rosidl_typesupport_introspection_c.c
+[9.395s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_introspection_c.so
+[9.395s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/_human_interfaces_s.ep.rosidl_typesupport_c.c
+[9.395s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv
+[9.395s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_object_description.py
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_detect_pointing_s.c
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_save_last_face.py
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/__init__.py
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_save_last_face_s.c
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_detect_pointing.py
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_object_description_s.c
+[9.396s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_c.so
+[9.397s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[9.457s] Listing '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/__init__.py'...
+[9.457s] Listing '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/__init__.py'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/_person_track.py'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/msg/_person_tracks.py'...
+[9.457s] Listing '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/__init__.py'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_detect_pointing.py'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_object_description.py'...
+[9.457s] Compiling '/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/srv/_save_last_face.py'...
+[9.465s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[9.465s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_fastrtps_c.so" to ""
+[9.465s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_introspection_c.so
+[9.465s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_introspection_c.so" to ""
+[9.466s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_c.so
+[9.466s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/python3.12/site-packages/human_interfaces/human_interfaces_s__rosidl_typesupport_c.so" to ""
+[9.466s] -- Installing: /home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_generator_py.so
+[9.467s] -- Set non-toolchain portion of runtime path of "/home/angel/human_detection/install/human_interfaces/lib/libhuman_interfaces__rosidl_generator_py.so" to ""
+[9.467s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/DetectPointing.idl
+[9.467s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/ObjectDescription.idl
+[9.467s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/SaveLastFace.idl
+[9.467s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/msg/PersonTrack.idl
+[9.467s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/msg/PersonTracks.idl
+[9.468s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/DetectPointing.srv
+[9.468s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/ObjectDescription.srv
+[9.468s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/srv/SaveLastFace.srv
+[9.468s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/msg/PersonTrack.msg
+[9.468s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/msg/PersonTracks.msg
+[9.469s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/ament_index/resource_index/package_run_dependencies/human_interfaces
+[9.469s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/ament_index/resource_index/parent_prefix_path/human_interfaces
+[9.469s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/ament_prefix_path.sh
+[9.469s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/ament_prefix_path.dsv
+[9.469s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/path.sh
+[9.469s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/environment/path.dsv
+[9.470s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/local_setup.bash
+[9.470s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/local_setup.sh
+[9.470s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/local_setup.zsh
+[9.470s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/local_setup.dsv
+[9.470s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/package.dsv
+[9.470s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/ament_index/resource_index/packages/human_interfaces
+[9.471s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_generator_cExport.cmake
+[9.471s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_generator_cExport-noconfig.cmake
+[9.471s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_typesupport_fastrtps_cExport.cmake
+[9.471s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[9.471s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_introspection_cExport.cmake
+[9.472s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[9.472s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_cExport.cmake
+[9.472s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_cExport-noconfig.cmake
+[9.472s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_generator_cppExport.cmake
+[9.472s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_typesupport_fastrtps_cppExport.cmake
+[9.473s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[9.473s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_introspection_cppExport.cmake
+[9.473s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[9.473s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_cppExport.cmake
+[9.473s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfaces__rosidl_typesupport_cppExport-noconfig.cmake
+[9.473s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_generator_pyExport.cmake
+[9.474s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/export_human_interfaces__rosidl_generator_pyExport-noconfig.cmake
+[9.474s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/rosidl_cmake-extras.cmake
+[9.474s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/ament_cmake_export_dependencies-extras.cmake
+[9.474s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/ament_cmake_export_include_directories-extras.cmake
+[9.474s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/ament_cmake_export_libraries-extras.cmake
+[9.475s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/ament_cmake_export_targets-extras.cmake
+[9.475s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[9.475s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[9.475s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfacesConfig.cmake
+[9.475s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/cmake/human_interfacesConfig-version.cmake
+[9.475s] -- Installing: /home/angel/human_detection/install/human_interfaces/share/human_interfaces/package.xml
+[9.479s] Invoked command in '/home/angel/human_detection/build/human_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/angel/human_detection/install/human_detection:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/angel/human_detection/build/human_interfaces

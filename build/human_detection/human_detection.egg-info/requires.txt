@@ -1,0 +1,5 @@
+setuptools
+opencv-python
+numpy
+ultralytics
+human_interfaces

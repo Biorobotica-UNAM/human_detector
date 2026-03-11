@@ -1,0 +1,44 @@
+[1.093s] Invoking command in '/home/angel/human_detection/src/human_detection': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/angel/human_detection/build/human_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/angel/human_detection/install/human_detection/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/human_detection build --build-base /home/angel/human_detection/build/human_detection/build install --record /home/angel/human_detection/build/human_detection/install.log --single-version-externally-managed install_data
+[1.531s] running egg_info
+[1.564s] writing ../../build/human_detection/human_detection.egg-info/PKG-INFO
+[1.565s] writing dependency_links to ../../build/human_detection/human_detection.egg-info/dependency_links.txt
+[1.565s] writing entry points to ../../build/human_detection/human_detection.egg-info/entry_points.txt
+[1.565s] writing requirements to ../../build/human_detection/human_detection.egg-info/requires.txt
+[1.565s] writing top-level names to ../../build/human_detection/human_detection.egg-info/top_level.txt
+[1.637s] reading manifest file '../../build/human_detection/human_detection.egg-info/SOURCES.txt'
+[1.638s] writing manifest file '../../build/human_detection/human_detection.egg-info/SOURCES.txt'
+[1.638s] running build
+[1.639s] running build_py
+[1.639s] copying human_detection/pointing_client.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.639s] copying human_detection/webcam_image.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.639s] copying human_detection/wave_detector.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.639s] copying human_detection/__init__.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.640s] copying human_detection/yolo_model.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.640s] copying human_detection/human_detector_node_pointing.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.640s] copying human_detection/person_tracker.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.640s] copying human_detection/human_detector_node_pointing_V2.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.640s] copying human_detection/human_detector_node.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.641s] copying human_detection/face_detector.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.641s] copying human_detection/recog_face.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.641s] copying human_detection/description_model.py -> /home/angel/human_detection/build/human_detection/build/lib/human_detection
+[1.641s] running install
+[1.647s] running install_lib
+[1.684s] copying /home/angel/human_detection/build/human_detection/build/lib/human_detection/person_tracker.py -> /home/angel/human_detection/install/human_detection/lib/python3.12/site-packages/human_detection
+[1.685s] byte-compiling /home/angel/human_detection/install/human_detection/lib/python3.12/site-packages/human_detection/person_tracker.py to person_tracker.cpython-312.pyc
+[1.688s] running install_data
+[1.688s] copying resource/human_detection -> /home/angel/human_detection/install/human_detection/share/ament_index/resource_index/packages
+[1.688s] copying package.xml -> /home/angel/human_detection/install/human_detection/share/human_detection
+[1.688s] running install_egg_info
+[1.725s] removing '/home/angel/human_detection/install/human_detection/lib/python3.12/site-packages/human_detection-0.0.0-py3.12.egg-info' (and everything under it)
+[1.725s] Copying ../../build/human_detection/human_detection.egg-info to /home/angel/human_detection/install/human_detection/lib/python3.12/site-packages/human_detection-0.0.0-py3.12.egg-info
+[1.726s] running install_scripts
+[1.798s] Installing client script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.798s] Installing detector script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.798s] Installing face_detect script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.798s] Installing object_description script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.798s] Installing person_tracker script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.799s] Installing pointing script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.799s] Installing pointing_v2 script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.799s] Installing webcam_image script to /home/angel/human_detection/install/human_detection/lib/human_detection
+[1.799s] writing list of installed files to '/home/angel/human_detection/build/human_detection/install.log'
+[1.833s] Invoked command in '/home/angel/human_detection/src/human_detection' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/angel/human_detection/build/human_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/angel/human_detection/install/human_detection/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/human_detection build --build-base /home/angel/human_detection/build/human_detection/build install --record /home/angel/human_detection/build/human_detection/install.log --single-version-externally-managed install_data

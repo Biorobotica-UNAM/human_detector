@@ -9,6 +9,11 @@ find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/DetectPointing.srv"
+  "srv/ObjectDescription.srv"
+  "srv/SaveLastFace.srv"
+  "msg/PersonTrack.msg"
+  "msg/PersonTracks.msg"
+  
   DEPENDENCIES sensor_msgs geometry_msgs std_msgs
 )
 

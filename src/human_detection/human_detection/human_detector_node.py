@@ -2,14 +2,11 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool, Header
-#from human_interfaces.msg import PersonTracks, PersonTrack
+from human_interfaces.msg import PersonTracks, PersonTrack
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
-
-
 # from .models.movenet import MoveNetDetector
-
 from .yolo_model import YoloDetector
 
 SKELETON = [
@@ -47,68 +44,54 @@ class HumanDetectorNode(Node):
         # Suscriptor a la cámara
         self.camera_sub = self.create_subscription(
             Image,
-            'image_raw', #/kinect/image_raw---/camera/rgb/image_raw
+            '/kinect/image_raw', #/kinect/image_raw---/camera/rgb/image_raw
             self.image_callback,
             10
         )
 
         # Publicador de detección de humanos
         self.human_detection_pub = self.create_publisher(Bool, '/human_detection/human_detected', 10)
-        #self.human_keypoints_pub = self.create_publisher(PersonTracks, '/human_detection/keypoints', 10)
+        self.human_keypoints_pub = self.create_publisher(PersonTracks, '/human_detection/keypoints', 10)
         self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image', 10)
 
     def image_callback(self, msg):
-        # Convertir la imagen ROS a OpenCV
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-        # Realizar la detección
         detections = self.detector.infer(frame)
 
-        # Publicar si se detectó un humano
-        human_detected = Bool()
-        human_detected.data = len(detections) > 0
-        
-        frame = draw_pose(frame, detections[0]['keypoints']) if len(detections) > 0 else None
-        
-        self.human_detection_pub.publish(human_detected)
+        # 1. Publicar estado de detección
+        self.human_detection_pub.publish(Bool(data=len(detections) > 0))
 
-        # Publicar los keypoints del humano detectado (si hay alguno)
-        #self.publish_keypoints(detections)
+        # 2. Dibujar y publicar si hay humanos
+        display_frame = frame.copy()
+        if len(detections) > 0:
+            # Dibujamos TODOS los esqueletos
+            for det in detections:
+                display_frame = draw_pose(display_frame, det["keypoints"])
+            
+            # Publicamos los keypoints
+            self.publish_keypoints(detections)
 
+        # 3. Publicar la imagen final
         self.human_pose_image_pub.publish(
-            self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')) #if frame is not None else None
-        
+            self.bridge.cv2_to_imgmsg(display_frame, encoding='bgr8'))
 
     def publish_keypoints(self, detections):
-        """
-        detections: lista de dicts con:
-            "keypoints": np.array shape (17,3)
-            "box": [...], (opcional)
-            "score": float
-        """
-
         msg = PersonTracks()
-        msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "camera_link"
+        msg.header.frame_id = "kinect_depth"
 
         for det in detections:
-            kp = det["keypoints"]   # np.array shape (17,3)
-            score = det["score"]
-
-            # Aplanar keypoints
-            flat_kp = kp.reshape(-1).astype(np.float32).tolist()
-
             person = PersonTrack()
-            person.id = -1  # aún no tiene ID, el tracker lo asigna
-            person.keypoints = flat_kp
-            person.confidence = float(score)
-            person.stamp = msg.header.stamp
-
+            person.id = -1
+            kp = det["keypoints"]
+            centroid = np.mean(kp[:, :2], axis=0)
+            person.position = centroid.tolist()  # Enviar posición del centroide
+            person.keypoints = det["keypoints"].reshape(-1).astype(np.float32).tolist()
+            person.confidence = float(det["score"])
+            # person.stamp = msg.header.stamp 
             msg.persons.append(person)
+            #self.get_logger().info(f"person: {person.id} | confidence: {person.confidence:.2f} | position: {person.position}")
 
-        # Publicar
         self.human_keypoints_pub.publish(msg)
 
 

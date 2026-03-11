@@ -1,0 +1,9 @@
+---
+bool human_detected
+int32 target_x
+int32 target_y
+float32 target_z
+string direction
+sensor_msgs/Image pose_image
+
+
