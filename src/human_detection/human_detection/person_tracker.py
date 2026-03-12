@@ -1,14 +1,19 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 import numpy as np
 import struct
 from scipy.optimize import linear_sum_assignment
-from std_msgs.msg import Header
+from std_msgs.msg import Bool
 from sensor_msgs.msg import PointCloud2 
 from visualization_msgs.msg import Marker, MarkerArray
 from human_interfaces.msg import PersonTracks, PersonTrack
 from geometry_msgs.msg import PointStamped
 
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+import tf2_geometry_msgs
 
 MAX_TRACK_AGE = 15        # Frames que un track puede estar "perdido" antes de borrarse
 MATCH_THRESHOLD = 1000.0   # Umbral de costo combinado (distancia + descriptor)
@@ -74,20 +79,32 @@ class Track:
 class PersonTrackerNode(Node):
     def __init__(self):
         super().__init__('person_tracker_node')
+
+        qos_pc = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1
+        )
         
         self.declare_parameter('enable_debug_markers', True)
+        self.declare_parameter("point_cloud_topic", "/kinect/points")
         self.debug_mode = self.get_parameter('enable_debug_markers').value
 
-        self.sub_pc = self.create_subscription(PointCloud2, '/kinect/points', self.pc_callback, 10)
-        
+        # TF2 listener
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        # Subscribers
+        detection_enable = self.create_subscription(Bool, '/person_tracker/enable', self.detection_callback, 10)
+        self.sub_pc = self.create_subscription(PointCloud2, self.get_parameter("point_cloud_topic").value, self.pc_callback, qos_pc)
         self.sub_kp = self.create_subscription(PersonTracks, '/human_detection/keypoints', self.callback, 10)
         
-        self.pub_tracks = self.create_publisher(PersonTracks, '/human_detection/person_tracks', 10)
-        
+        # Publishers
+        self.pub_tracks = self.create_publisher(PersonTracks, "/human_detection/person_tracks", 10)
         self.marker_pub = self.create_publisher(MarkerArray, '/human_detection/track_markers', 10)
-
         self.target_points = self.create_publisher(PointStamped, '/human_detection/target_point', 10)
 
+        self.enabled = False
         self.latest_pc = None
         self.tracks = []
         self.next_id = 0
@@ -97,24 +114,20 @@ class PersonTrackerNode(Node):
         self.latest_pc = msg
 
     def get_3d_point(self, u, v):
-
-        if self.latest_pc is None:
-            return None
-        
+        if self.latest_pc is None:return None
         try:
-            u = int(np.clip(u, 0, self.latest_pc.width - 1))
-            v = int(np.clip(v, 0, self.latest_pc.height - 1))
+            u_idx = int(np.clip(u, 0, self.latest_pc.width - 1))
+            v_idx = int(np.clip(v, 0, self.latest_pc.height - 1))
 
-            offset = (v * self.latest_pc.row_step) + (u * self.latest_pc.point_step)
+            offset = (v_idx * self.latest_pc.row_step) + (u_idx * self.latest_pc.point_step)
             x, y, z = struct.unpack('fff', self.latest_pc.data[offset:offset+12])
 
-            if np.isnan(x) or np.isnan(y) or np.isnan(z):
-                return None
+            if np.isnan(x) or np.isnan(y) or np.isnan(z): return None
             return (x, y, z)
         except Exception as e:
             self.get_logger().error(f"ERROR TO SEE THE 3D POINT: {e}")
             return None
-    
+    """
     def callback(self, msg):
         # 1. Preparar deteccione
         current_dets = []
@@ -161,6 +174,48 @@ class PersonTrackerNode(Node):
         #self.get_logger().info(f"Tracks activos en memoria: {len(self.tracks)}")
 
         self._publish_tracks()
+        """
+    
+    def detection_callback(self, msg):
+        self.enabled = msg.data
+        if not self.enabled:
+            self.get_logger().info("Detección deshabilitada, limpiando tracks...")
+            self.tracks.clear()
+            self._publish_tracks()  # Publicar mensaje vacío para limpiar visualización
+            return
+
+    
+    def callback(self, msg):
+        if not self.enabled: return
+        
+        current_dets = []
+        for det in msg.persons:
+            raw_kp = np.array(det.keypoints)
+            if raw_kp.size >= 51:
+                kp = raw_kp[:51].reshape((17, 3))
+                desc = normalize_descriptor(kp)
+                if desc is not None:
+                    current_dets.append({'kp': kp, 'desc': desc, 'pos': np.mean(kp[:, :2], axis=0)})
+
+        for t in self.tracks: t.predict()
+
+        assigned_dets = set()
+        if self.tracks and current_dets:
+            cost_matrix = self._build_cost_matrix(current_dets)
+            row_ind, col_ind = linear_sum_assignment(cost_matrix)
+            for t_idx, d_idx in zip(row_ind, col_ind):
+                if cost_matrix[t_idx, d_idx] < MATCH_THRESHOLD:
+                    self.tracks[t_idx].update(current_dets[d_idx]['kp'], current_dets[d_idx]['desc'])
+                    assigned_dets.add(d_idx)
+
+        self.tracks = [t for t in self.tracks if t.age < MAX_TRACK_AGE]
+
+        for i, det in enumerate(current_dets):
+            if i not in assigned_dets:
+                self.tracks.append(Track(self.next_id, det['kp'], det['desc']))
+                self.next_id += 1
+        
+        self._publish_tracks()
 
     def _build_cost_matrix(self, detections):
         cost = np.zeros((len(self.tracks), len(detections)))
@@ -168,79 +223,66 @@ class PersonTrackerNode(Node):
             for j, det in enumerate(detections):
                 d_pos = np.linalg.norm(tr.pos - det['pos'])
                 d_desc = np.linalg.norm(tr.desc - det['desc'])
-                
                 cost[i, j] = (DIST_WEIGHT * d_pos) + (DESC_WEIGHT * d_desc * 100)
         return cost
 
     def _publish_tracks(self):
-
         if self.latest_pc is None:
-            self.get_logger().warn("waiting for point cloud data to publish tracks...")
+            self.get_logger().warn("waiting for point cloud data to publish tracks...", throttle_duration_sec=5.0)
             return
+        
         current_frame = self.latest_pc.header.frame_id
-        current_time = self.get_clock().now().to_msg()
+        now = self.get_clock().now()
+        
         msg = PersonTracks()
         msg.header.frame_id = current_frame
-        msg.header.stamp = current_time
-        marker_array = MarkerArray()
+        msg.header.stamp = now.to_msg()
 
-    
-        if not self.tracks:
-            if self.debug_mode:
-                delete_all = Marker()
-                delete_all.action = Marker.DELETEALL
-                marker_array.markers.append(delete_all)
-                self.marker_pub.publish(marker_array)
-            return 
-        
+        if len(self.tracks) == 0: return
         tr = self.tracks[0]
         real_pos = self.get_3d_point(tr.pos[0], tr.pos[1])
 
+        final_point = PointStamped()
+        final_point.header.frame_id = current_frame
+        final_point.header.stamp = now.to_msg()
+
+        if real_pos:
+            # Crear el punto en el frame de la cámara
+            final_point.point.x, final_point.point.y, final_point.point.z = map(float, real_pos)
+            try:
+                # Intentar transformar a mapa
+                point_to_transform = PointStamped()
+                point_to_transform.header.frame_id = current_frame
+                point_to_transform.header.stamp = rclpy.time.Time().to_msg()
+                point_to_transform.point = final_point.point
+                
+                transformed_msg = self.tf_buffer.transform(
+                    point_to_transform, 'map', timeout=rclpy.duration.Duration(seconds=0.05))
+                final_point = transformed_msg
+            except Exception as e:
+                self.get_logger().warn(f"TF Falló, usando frame local: {e}", throttle_duration_sec=2.0)
+
+            self.target_points.publish(final_point)
+
+        if self.debug_mode:
+                marker_array = MarkerArray()
+                sphere = Marker()
+                sphere.header.frame_id = final_point.header.frame_id
+                sphere.header.stamp = now.to_msg()
+                sphere.ns = "HumanTracks"; sphere.id = 0; sphere.type = Marker.SPHERE
+                sphere.action = Marker.ADD
+                sphere.pose.position = final_point.point
+                sphere.scale.x = sphere.scale.y = sphere.scale.z = 0.2
+                sphere.color.r, sphere.color.g, sphere.color.a = 1.0, 1.0, 0.8
+                marker_array.markers.append(sphere)
+                self.marker_pub.publish(marker_array)
+
+        # Publicar mensaje de PersonTracks para otros nodos
         pt = PersonTrack()
         pt.id = tr.id
         pt.keypoints = tr.kp.flatten().tolist()
         pt.position = tr.pos.tolist()
         msg.persons.append(pt)
-
-
-
-        sphere = Marker()
-        sphere.header.frame_id = current_frame
-        sphere.header.stamp = current_time
-        sphere.ns = "HumanTracks"
-        sphere.id = 0 
-        sphere.type = Marker.SPHERE
-
-        sphere.scale.x = 0.2
-        sphere.scale.y = 0.2
-        sphere.scale.z = 0.2
-        sphere.pose.orientation.w = 1.0
-
-        if real_pos:
-
-            target_points = PointStamped()
-            target_points.header.frame_id = current_frame
-            target_points.header.stamp = current_time
-            target_points.point.x = float(real_pos[0])
-            target_points.point.y = float(real_pos[1])
-            target_points.point.z = float(real_pos[2])
-            self.target_points.publish(target_points)
-
-            sphere.action = Marker.ADD
-            sphere.pose.position.x = real_pos[0]
-            sphere.pose.position.y = real_pos[1]
-            sphere.pose.position.z = real_pos[2]
-            sphere.color.r = 1.0; sphere.color.g = 1.0; sphere.color.b = 0.0; sphere.color.a = 0.8
-        else:
-
-            sphere.action = Marker.DELETE
-            self.get_logger().warn("DONT HAVE TO SEE THE 3D POINT: {}".format(tr.id))
-        
-        
-        if self.debug_mode:
-            marker_array.markers.append(sphere)
-            self.marker_pub.publish(marker_array)
-            
         self.pub_tracks.publish(msg)
 
 def main(args=None):
@@ -250,8 +292,9 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-    node.destroy_node()
-    #rclpy.shutdown()
+    finally:
+        node.destroy_node()
+        #rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

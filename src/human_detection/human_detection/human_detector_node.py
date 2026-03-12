@@ -27,6 +27,7 @@ class HumanDetectorNode(Node):
 
         # Parámetros
         self.declare_parameter('model_type', 'yolo')
+        self.declare_parameter("image_topic", "/kinect/image_raw")
         self.model_type = self.get_parameter('model_type').get_parameter_value().string_value
 
         # Inicializar el detector basado en el modelo seleccionado
@@ -37,24 +38,33 @@ class HumanDetectorNode(Node):
             self.get_logger().error(f'Modelo desconocido: {self.model_type}')
             rclpy.shutdown()
             return
+        
+        self.enabled = False
 
         # CvBridge para convertir imágenes ROS a OpenCV
         self.bridge = CvBridge()
 
         # Suscriptor a la cámara
-        self.camera_sub = self.create_subscription(
-            Image,
-            '/kinect/image_raw', #/kinect/image_raw---/camera/rgb/image_raw
-            self.image_callback,
-            10
-        )
+        self.camera_sub = self.create_subscription(Image, self.get_parameter("image_topic").value,
+            self.image_callback, 10)
+        self.human_detection_sub = self.create_subscription(Bool, '/human_detection/enable', self.detection_callback, 10)
 
         # Publicador de detección de humanos
         self.human_detection_pub = self.create_publisher(Bool, '/human_detection/human_detected', 10)
         self.human_keypoints_pub = self.create_publisher(PersonTracks, '/human_detection/keypoints', 10)
         self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image', 10)
 
+    def detection_callback(self, msg):
+        self.enabled = msg.data
+        if not self.enabled:
+            self.get_logger().info("Detección deshabilitada, limpiando tracks...")
+            # Publicar mensaje vacío para limpiar visualización
+            self.human_detection_pub.publish(Bool(data=False))
+            self.human_keypoints_pub.publish(PersonTracks())
+            return
+
     def image_callback(self, msg):
+        if not self.enabled: return
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         detections = self.detector.infer(frame)
 
