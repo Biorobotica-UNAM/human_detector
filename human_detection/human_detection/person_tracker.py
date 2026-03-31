@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 import numpy as np
 import struct
 from scipy.optimize import linear_sum_assignment
@@ -49,6 +49,12 @@ class PersonTrackerNode(Node):
     def __init__(self):
         super().__init__('person_tracker_node')
 
+        qos_pc = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
         self.declare_parameter("point_cloud_topic", "/kinect/points")
         self.declare_parameter("target_frame", "kinect_depth_fixed") #base_link
 
@@ -61,9 +67,7 @@ class PersonTrackerNode(Node):
 
         # Suscriptores
         self.sub_yolo = self.create_subscription(YoloDetections, 'detections_list', self.callback, 10)
-        self.sub_pc = self.create_subscription(
-            PointCloud2, self.get_parameter("point_cloud_topic").value, 
-            self.pc_callback, QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, depth=1))
+        self.sub_pc = self.create_subscription(PointCloud2, self.get_parameter("point_cloud_topic").value, self.pc_callback, qos_pc)
 
         # Publicadores
         self.pub_target = self.create_publisher(PointStamped, '/human_detection/target_point', 10)
