@@ -228,7 +228,6 @@ class PersonTrackerNode(Node):
 
     def _publish_tracks(self):
         if self.latest_pc is None:
-            self.get_logger().warn("waiting for point cloud data to publish tracks...", throttle_duration_sec=5.0)
             return
         
         current_frame = self.latest_pc.header.frame_id
@@ -242,27 +241,24 @@ class PersonTrackerNode(Node):
         tr = self.tracks[0]
         real_pos = self.get_3d_point(tr.pos[0], tr.pos[1])
 
-        final_point = PointStamped()
-        final_point.header.frame_id = current_frame
-        final_point.header.stamp = now.to_msg()
-
         if real_pos:
+            target_msg = PointStamped()
             # Crear el punto en el frame de la cámara
-            final_point.point.x, final_point.point.y, final_point.point.z = map(float, real_pos)
+            target_msg.header.stamp = self.latest_pc.header.stamp 
+            target_msg.header.frame_id = current_frame
+            target_msg.point.x, target_msg.point.y, target_msg.point.z = map(float, real_pos)
             try:
-                # Intentar transformar a mapa
-                point_to_transform = PointStamped()
-                point_to_transform.header.frame_id = current_frame
-                point_to_transform.header.stamp = rclpy.time.Time().to_msg()
-                point_to_transform.point = final_point.point
+                transform = self.tf_buffer.lookup_transform(
+                    "base_link",
+                    target_msg.header.frame_id, 
+                    rclpy.time.Time())
                 
-                transformed_msg = self.tf_buffer.transform(
-                    point_to_transform, 'map', timeout=rclpy.duration.Duration(seconds=0.05))
-                final_point = transformed_msg
+                final_point = tf2_geometry_msgs.do_transform_point(target_msg, transform)
+                self.target_points.publish(final_point)
+                
             except Exception as e:
                 self.get_logger().warn(f"TF Falló, usando frame local: {e}", throttle_duration_sec=2.0)
 
-            self.target_points.publish(final_point)
 
         if self.debug_mode:
                 marker_array = MarkerArray()
