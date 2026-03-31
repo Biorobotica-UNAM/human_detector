@@ -144,7 +144,9 @@ class PersonTrackerNode(Node):
         if self.target_id is None or self.lost_frames >= MAX_LOST_FRAMES:
             confirmed = [t for t in self.tracks if t.is_confirmed]
             if confirmed:
-                confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
+                center_x = self.latest_pc.width / 2
+                confirmed.sort(key=lambda t: abs(t.pos[0] - center_x))
+                #confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
                 self.target_id = confirmed[0].id
                 self.get_logger().info(f" New Person: ID {self.target_id}")
 
