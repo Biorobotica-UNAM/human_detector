@@ -66,7 +66,7 @@ class PersonTrackerNode(Node):
         self.lost_frames = 0
 
         # Suscriptores
-        self.sub_yolo = self.create_subscription(YoloDetections, 'detections_list', self.callback, 10)
+        self.sub_yolo = self.create_subscription(YoloDetections, '/vision/detections_list', self.callback, 10)
         self.sub_pc = self.create_subscription(PointCloud2, self.get_parameter("point_cloud_topic").value, self.pc_callback, qos_pc)
 
         # Publicadores
