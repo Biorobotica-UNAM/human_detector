@@ -1,0 +1,9 @@
+**/models/**
+**/install/**
+**/build/**
+**/log/**
+**/__pycache__/**
+
+*.pt
+*.onnx
+*.pth

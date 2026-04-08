@@ -26,10 +26,9 @@ class HumanDetectionClient(Node):
                 self.get_logger().info(f'Target y: {res.target_y}')
                 self.get_logger().info(f'Direction: {res.direction}')
 
-                # Guardar la imagen directamente en home
                 cv_image = self.bridge.imgmsg_to_cv2(res.pose_image, desired_encoding='bgr8')
                 cv2.imwrite(os.path.expanduser('~/human.png'), cv_image)
-                self.get_logger().info('Imagen guardada en ~/human.png')
+                self.get_logger().info('save image')
             else:
                 self.get_logger().info('Human detected: False')
         else:
