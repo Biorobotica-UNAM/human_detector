@@ -73,10 +73,11 @@ class PersonTrackerNode(Node):
 
         # Publicadores
         self.pub_target = self.create_publisher(PointStamped, '/human_detection/target_point', 10)
-        self.pub_look_at = self.create_publisher(PointStamped, '/hardware/head/look_at_point', 10)
+        self.pub_look_at = self.create_publisher(PointStamped, '/hardware/head/look_at', 10)
         self.marker_pub = self.create_publisher(MarkerArray, '/human_detection/track_markers', 10)
 
         self.srv_focus = self.create_service(SetBool, '/vision/focus', self.handle_focus_service)
+        self.cli_enable_continuous = self.create_client(SetBool, '/vision/enable_continuous')
 
         self.latest_pc = None
         self.tracks = []
@@ -87,6 +88,7 @@ class PersonTrackerNode(Node):
     def handle_focus_service(self, request, response):
         """Manejador del servicio para activar/desactivar el seguimiento visual."""
         self.tracking_enabled = request.data
+        self.cli_enable_continuous.call_async(SetBool.Request(data=self.tracking_enabled))
         response.success = True
         status = "ENABLED" if self.tracking_enabled else "DISABLED"
         response.message = f"Head tracking focus is now {status}"
