@@ -27,12 +27,17 @@ class HumanDetectorNode(Node):
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
-        
+        self.declare_parameter("image_topic", "/head_rgbd_sensor/rgb/image_rect_color")
+        self.declare_parameter("pointcloud_topic", "/hardware/camera/points")
+
+        self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
+        self.pointcloud_topic = self.get_parameter("pointcloud_topic").get_parameter_value().string_value
+
         # Suscripciones
         self.image_sub = self.create_subscription(
-            Image, '/head_rgbd_sensor/rgb/image_rect_color', self.image_callback, 10)
+            Image, self.image_topic, self.image_callback, 10)
         self.pcd_sub = self.create_subscription(
-            PointCloud2, '/hardware/camera/points', self.pcd_callback, qos_profile)
+            PointCloud2, self.pointcloud_topic, self.pcd_callback, qos_profile)
         
         self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image_wrist', 10)
         
