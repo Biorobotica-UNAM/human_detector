@@ -17,10 +17,11 @@ class HumanDetectorNode(Node):
         super().__init__('human_detector_node')
         self.bridge = CvBridge()
         self.detector = YoloDetector()
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self) 
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self) 
         
         self.latest_frame = None
-        self.latest_pcd = None
+        self.last_cloud = None
+        self.frame_id = None
 
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -45,21 +46,23 @@ class HumanDetectorNode(Node):
         self.get_logger().info("[VISION] Nodo listo. Esperando llamada del servicio...")
 
     def image_callback(self, msg):
+        if self.frame_id is None:
+            self.frame_id = msg.header.frame_id
         self.latest_frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
 
     def pcd_callback(self, msg):
-        self.latest_pcd = msg
+        self.last_cloud = msg
 
     def get_3d_point(self, u, v):
-        if self.latest_pcd is None: return None
-        width, height = self.latest_pcd.width, self.latest_pcd.height
-        point_step, row_step = self.latest_pcd.point_step, self.latest_pcd.row_step
+        if self.last_cloud is None: return None
+        width, height = self.last_cloud.width, self.last_cloud.height
+        point_step, row_step = self.last_cloud.point_step, self.last_cloud.row_step
 
         def fetch_single_point(curr_u, curr_v):
             if not (0 <= curr_u < width and 0 <= curr_v < height): return None
             offset = (int(curr_v) * row_step) + (int(curr_u) * point_step)
             try:
-                data = self.latest_pcd.data[offset : offset + 12]
+                data = self.last_cloud.data[offset : offset + 12]
                 x, y, z = struct.unpack('fff', data)
                 if np.isfinite(z) and z > 0.1: return (x, y, z)
             except: return None
@@ -75,11 +78,10 @@ class HumanDetectorNode(Node):
 
     def handle_service(self, request, response):
         response.human_detected = False
-        response.target_x, response.target_y, response.target_z = 0, 0, 0.0
         response.direction = "none"
         response.pose_image = Image()
 
-        if self.latest_frame is None or self.latest_pcd is None:
+        if self.latest_frame is None or self.last_cloud is None:
             self.get_logger().warn("Sensores no listos (RGB/PCD)")
             return response
 
@@ -103,9 +105,11 @@ class HumanDetectorNode(Node):
 
             if p3d is not None:
                 response.human_detected = True
-                response.target_x = int(mid_x)
-                response.target_y = int(mid_y)
-                response.target_z = float(p3d[2])
+                response.point.point.x = float(p3d[0])
+                response.point.point.y = float(p3d[1])
+                response.point.point.z = float(p3d[2])
+                response.point.header.frame_id = self.frame_id
+            
                 
                 horiz = "center"
                 if mid_x < 213: horiz = "left"
@@ -114,7 +118,7 @@ class HumanDetectorNode(Node):
                 dist_stat = "ideal" if 1.2 < p3d[2] < 2.8 else "reposition"
                 response.direction = f"{horiz}_{dist_stat}"
                 clean_name = response.direction.replace(" ", "_")
-                self.publish_human_tf(p3d, clean_name, self.latest_pcd.header.stamp)
+                self.publish_human_tf(p3d, clean_name, self.last_cloud.header.stamp)
                 print(f"Posición: X={p3d[0]:.2f}, Y={p3d[1]:.2f}, Z={p3d[2]:.2f}")
                 print(f"Dirección: {response.direction}")
             
@@ -126,9 +130,10 @@ class HumanDetectorNode(Node):
     
     def publish_human_tf(self, p3d, name, stamp):
         t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
         t.header.stamp = stamp 
-        t.header.frame_id = self.latest_pcd.header.frame_id
-        t.child_frame_id = f'human_{name}'
+        t.header.frame_id = self.last_cloud.header.frame_id
+        t.child_frame_id = f'costumer'
         
         t.transform.translation.x = float(p3d[0])
         t.transform.translation.y = float(p3d[1])
