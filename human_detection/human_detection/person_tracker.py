@@ -8,6 +8,7 @@ from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_interfaces.msg import YoloDetections, YoloDetection
 from geometry_msgs.msg import PointStamped
+from std_srvs.srv import SetBool
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 import tf2_geometry_msgs
@@ -64,20 +65,35 @@ class PersonTrackerNode(Node):
         # Variables de bloqueo
         self.target_id = None
         self.lost_frames = 0
+        self.tracking_enabled = False
 
         # Suscriptores
-        self.sub_yolo = self.create_subscription(YoloDetections, 'detections_list', self.callback, 10)
+        self.sub_yolo = self.create_subscription(YoloDetections, '/vision/detections_list', self.callback, 10)
         self.sub_pc = self.create_subscription(PointCloud2, self.get_parameter("point_cloud_topic").value, self.pc_callback, qos_pc)
 
         # Publicadores
-        self.pub_target = self.create_publisher(PointStamped, '/human_detection/target_point2', 10)
+        self.pub_target = self.create_publisher(PointStamped, '/human_detection/target_point', 10)
+        self.pub_look_at = self.create_publisher(PointStamped, '/hardware/head/look_at', 10)
         self.marker_pub = self.create_publisher(MarkerArray, '/human_detection/track_markers', 10)
+
+        self.srv_focus = self.create_service(SetBool, '/vision/focus', self.handle_focus_service)
+        self.cli_enable_continuous = self.create_client(SetBool, '/vision/enable_continuous')
 
         self.latest_pc = None
         self.tracks = []
         self.next_id = 0
         
-        self.get_logger().info(" human Tracker reafy to track humans")
+        self.get_logger().info(" human Tracker ready!")
+
+    def handle_focus_service(self, request, response):
+        """Manejador del servicio para activar/desactivar el seguimiento visual."""
+        self.tracking_enabled = request.data
+        self.cli_enable_continuous.call_async(SetBool.Request(data=self.tracking_enabled))
+        response.success = True
+        status = "ENABLED" if self.tracking_enabled else "DISABLED"
+        response.message = f"Head tracking focus is now {status}"
+        self.get_logger().info(response.message)
+        return response
 
     def pc_callback(self, msg):
         self.latest_pc = msg
@@ -158,9 +174,9 @@ class PersonTrackerNode(Node):
         if selected_track:
             raw_3d = self.get_3d_point(selected_track.pos[0], selected_track.pos[1])
             if raw_3d:
-                self._send_goal(raw_3d, selected_track.id)
+                self._send_outputs(raw_3d, selected_track.id)
 
-    def _send_goal(self, coords, tid):
+    def _send_outputs(self, coords, tid):
         p = PointStamped()
         p.header.frame_id = self.latest_pc.header.frame_id
         p.header.stamp = self.get_clock().now().to_msg()
@@ -170,9 +186,17 @@ class PersonTrackerNode(Node):
             t_frame = self.get_parameter("target_frame").value
             trans = self.tf_buffer.lookup_transform(t_frame, p.header.frame_id, rclpy.time.Time())
             p_base = tf2_geometry_msgs.do_transform_point(p, trans)
+            
+            # 1. Siempre publicamos a target_point (para navegación/base)
             self.pub_target.publish(p_base)
+            
+            # 2. Publicamos a look_at SOLO si el servicio está en True
+            if self.tracking_enabled:
+                self.pub_look_at.publish(p_base)
+
             self._publish_marker(p_base, tid)
-        except: pass
+        except Exception as e:
+            self.get_logger().error(f"Transform error: {e}")
 
     def _publish_marker(self, p_base, tid):
         ma = MarkerArray()
