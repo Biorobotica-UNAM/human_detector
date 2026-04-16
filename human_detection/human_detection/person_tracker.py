@@ -114,7 +114,8 @@ class PersonTrackerNode(Node):
         current_dets = []
         for det in msg.detections:
             if det.class_name == "person" and det.confidence >= MIN_CONFIDENCE:
-                cx, cy = (det.x_min + det.x_max) / 2.0, (det.y_min + det.y_max) / 2.0
+                cx = (det.x_min + det.x_max) / 2
+                cy = det.y_min + (det.y_max - det.y_min) * 0.15 # ajuste para mover el punto dentro de un % del Bbox, grax
                 w, h = (det.x_max - det.x_min), (det.y_max - det.y_min)
                 desc = np.array([w/h, w*h]) if h != 0 else np.array([0.0, 0.0])
                 current_dets.append({'pos': np.array([cx, cy]), 'desc': desc})
