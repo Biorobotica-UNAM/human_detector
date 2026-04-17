@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2
 from cv_bridge import CvBridge
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, PointStamped
 import cv2
 import numpy as np
 import tf2_ros
@@ -28,8 +28,8 @@ class HumanDetectorNode(Node):
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
-        self.declare_parameter("image_topic", "/head_rgbd_sensor/rgb/image_rect_color")
-        self.declare_parameter("pointcloud_topic", "/hardware/camera/points")
+        self.declare_parameter("image_topic", "/kinect/image_raw") #/head_rgbd_sensor/rgb/image_rect_color
+        self.declare_parameter("pointcloud_topic", "/kinect/points") #/hardware/camera/points
 
         self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
         self.pointcloud_topic = self.get_parameter("pointcloud_topic").get_parameter_value().string_value
@@ -79,7 +79,9 @@ class HumanDetectorNode(Node):
     def handle_service(self, request, response):
         response.human_detected = False
         response.direction = "none"
-        response.pose_image = Image()
+        #response.pose_image = Image()
+
+        response.point = PointStamped()
 
         if self.latest_frame is None or self.last_cloud is None:
             self.get_logger().warn("Sensores no listos (RGB/PCD)")
@@ -105,6 +107,8 @@ class HumanDetectorNode(Node):
 
             if p3d is not None:
                 response.human_detected = True
+                response.point.header.stamp = self.last_cloud.header.stamp
+                response.point.header.frame_id = self.frame_id
                 response.point.point.x = float(p3d[0])
                 response.point.point.y = float(p3d[1])
                 response.point.point.z = float(p3d[2])
@@ -118,13 +122,13 @@ class HumanDetectorNode(Node):
                 dist_stat = "ideal" if 1.2 < p3d[2] < 2.8 else "reposition"
                 response.direction = f"{horiz}_{dist_stat}"
                 clean_name = response.direction.replace(" ", "_")
+                self.get_logger().info(f"Detección: {response.direction} in position X={p3d[0]:.2f}, Y={p3d[1]:.2f}, Z={p3d[2]:.2f}")
                 self.publish_human_tf(p3d, clean_name, self.last_cloud.header.stamp)
-                print(f"Posición: X={p3d[0]:.2f}, Y={p3d[1]:.2f}, Z={p3d[2]:.2f}")
-                print(f"Dirección: {response.direction}")
+                
             
             cv2.circle(frame, (mid_x, mid_y), 20, (0, 255, 0), -1)
-            response.pose_image = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
-            self.human_pose_image_pub.publish(response.pose_image)
+            debug_img = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
+            self.human_pose_image_pub.publish(debug_img)
 
         return response
     
