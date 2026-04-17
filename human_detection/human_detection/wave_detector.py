@@ -10,7 +10,7 @@ import tf2_ros
 import struct
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from human_interfaces.srv import DetectPointing
-from .yolo_model import YoloDetector
+from yolo_model import YoloDetector
 
 class HumanDetectorNode(Node):
     def __init__(self):
