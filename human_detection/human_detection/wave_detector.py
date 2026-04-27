@@ -10,7 +10,7 @@ import tf2_ros
 import struct
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from human_interfaces.srv import DetectPointing
-from yolo_model import YoloDetector
+from .yolo_model import YoloDetector
 
 class HumanDetectorNode(Node):
     def __init__(self):
@@ -43,7 +43,7 @@ class HumanDetectorNode(Node):
         self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image_wrist', 10)
         
         self.create_service(DetectPointing, '/human_detection/detect_wrist', self.handle_service)
-        self.get_logger().info("[VISION] Nodo listo. Esperando llamada del servicio...")
+        self.get_logger().info("[VISION NODE] Nodo listo. Esperando llamada del servicio...")
 
     def image_callback(self, msg):
         if self.frame_id is None:
