@@ -11,14 +11,20 @@ import struct
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from human_interfaces.srv import DetectPointing
 from .yolo_model import YoloDetector
+import tf2_geometry_msgs 
 
 class HumanDetectorNode(Node):
     def __init__(self):
         super().__init__('human_detector_node')
         self.bridge = CvBridge()
         self.detector = YoloDetector()
+        # Se mantiene como StaticTransformBroadcaster por tu requerimiento
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self) 
         
+        # Buffer necesario para transformar la posición al suelo (base_link)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
         self.latest_frame = None
         self.last_cloud = None
         self.frame_id = None
@@ -133,18 +139,40 @@ class HumanDetectorNode(Node):
         return response
     
     def publish_human_tf(self, p3d, name, stamp):
-        t = TransformStamped()
-        t.header.stamp = self.get_clock().now().to_msg()
-        t.header.stamp = stamp 
-        t.header.frame_id = self.last_cloud.header.frame_id
-        t.child_frame_id = f'costumer'
-        
-        t.transform.translation.x = float(p3d[0])
-        t.transform.translation.y = float(p3d[1])
-        t.transform.translation.z = float(p3d[2])
-        t.transform.rotation.w = 1.0
-        
-        self.tf_broadcaster.sendTransform(t)
+        try:
+            # Creamos el punto en el frame de la cámara
+            p_cam = PointStamped()
+            p_cam.header.stamp = stamp
+            p_cam.header.frame_id = self.last_cloud.header.frame_id
+            p_cam.point.x, p_cam.point.y, p_cam.point.z = map(float, p3d)
+
+            # Transformamos a base_link para obtener coordenadas respecto al suelo del robot
+            transform = self.tf_buffer.lookup_transform('base_link', p_cam.header.frame_id, stamp, rclpy.duration.Duration(seconds=0.1))
+            p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
+
+            # Cálculo de offset de 0.5m
+            dist = np.sqrt(p_base.point.x**2 + p_base.point.y**2)
+            offset = 0.7
+            if dist > offset:
+                ratio = (dist - offset) / dist
+                f_x, f_y = p_base.point.x * ratio, p_base.point.y * ratio
+            else:
+                f_x, f_y = p_base.point.x, p_base.point.y
+
+            # Publicamos la TF estática referenciada a base_link
+            t = TransformStamped()
+            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.frame_id = 'base_link'
+            t.child_frame_id = f'costumer'
+            
+            t.transform.translation.x = float(f_x)
+            t.transform.translation.y = float(f_y)
+            t.transform.translation.z = 0.0 # <--- Forzado al suelo
+            t.transform.rotation.w = 1.0
+            
+            self.tf_broadcaster.sendTransform(t)
+        except Exception as e:
+            self.get_logger().error(f"Error en publish_human_tf: {e}")
 
 def main(args=None):
     rclpy.init(args=args)
