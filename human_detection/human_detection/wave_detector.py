@@ -16,40 +16,92 @@ import tf2_geometry_msgs
 class HumanDetectorNode(Node):
     def __init__(self):
         super().__init__('human_detector_node')
+
         self.bridge = CvBridge()
         self.detector = YoloDetector()
-        # Se mantiene como StaticTransformBroadcaster por tu requerimiento
-        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self) 
-        
-        # Buffer necesario para transformar la posición al suelo (base_link)
+
+        # Broadcaster TF dinámico
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+
+        # Buffer TF
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
+        # Variables
         self.latest_frame = None
         self.last_cloud = None
         self.frame_id = None
+
+        # Última TF detectada del customer
+        self.customer_tf = None
 
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
-        self.declare_parameter("image_topic", "/kinect/image_raw") #/head_rgbd_sensor/rgb/image_rect_color
-        self.declare_parameter("pointcloud_topic", "/kinect/points") #/hardware/camera/points
 
-        self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
-        self.pointcloud_topic = self.get_parameter("pointcloud_topic").get_parameter_value().string_value
+        # Parámetros
+        self.declare_parameter(
+            "image_topic",
+            "/kinect/image_raw"
+        )
 
-        # Suscripciones
+        self.declare_parameter(
+            "pointcloud_topic",
+            "/kinect/points"
+        )
+
+        self.image_topic = (
+            self.get_parameter("image_topic")
+            .get_parameter_value()
+            .string_value
+        )
+
+        self.pointcloud_topic = (
+            self.get_parameter("pointcloud_topic")
+            .get_parameter_value()
+            .string_value
+        )
+
+        # Subscripciones
         self.image_sub = self.create_subscription(
-            Image, self.image_topic, self.image_callback, 10)
+            Image,
+            self.image_topic,
+            self.image_callback,
+            10
+        )
+
         self.pcd_sub = self.create_subscription(
-            PointCloud2, self.pointcloud_topic, self.pcd_callback, qos_profile)
-        
-        self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image_wrist', 10)
-        
-        self.create_service(DetectPointing, '/human_detection/detect_wrist', self.handle_service)
-        self.get_logger().info("[VISION NODE] Nodo listo. Esperando llamada del servicio...")
+            PointCloud2,
+            self.pointcloud_topic,
+            self.pcd_callback,
+            qos_profile
+        )
+
+        # Publisher imagen debug
+        self.human_pose_image_pub = self.create_publisher(
+            Image,
+            '/human_detection/pose_image_wrist',
+            10
+        )
+
+        # Servicio detección
+        self.create_service(
+            DetectPointing,
+            '/human_detection/detect_wrist',
+            self.handle_service
+        )
+
+        # Timer para republicar TF constantemente
+        self.tf_timer = self.create_timer(
+            0.1,
+            self.republish_customer_tf
+        )
+
+        self.get_logger().info(
+            "[VISION NODE] Nodo listo. Esperando llamada del servicio..."
+        )
 
     def image_callback(self, msg):
         if self.frame_id is None:
@@ -147,7 +199,8 @@ class HumanDetectorNode(Node):
             p_cam.point.x, p_cam.point.y, p_cam.point.z = map(float, p3d)
 
             # Transformamos a base_link para obtener coordenadas respecto al suelo del robot
-            transform = self.tf_buffer.lookup_transform('base_link', p_cam.header.frame_id, stamp, rclpy.duration.Duration(seconds=0.1))
+            #transform = self.tf_buffer.lookup_transform('map', p_cam.header.frame_id, stamp, rclpy.duration.Duration(seconds=0.1))
+            transform = self.tf_buffer.lookup_transform('map', p_cam.header.frame_id, rclpy.time.Time(), rclpy.duration.Duration(seconds=0.1))
             p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
 
             # Cálculo de offset de 0.5m
@@ -162,17 +215,28 @@ class HumanDetectorNode(Node):
             # Publicamos la TF estática referenciada a base_link
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
-            t.header.frame_id = 'base_link'
-            t.child_frame_id = f'costumer'
+            t.header.frame_id = 'map'
+            t.child_frame_id = f'customer'
             
             t.transform.translation.x = float(f_x)
             t.transform.translation.y = float(f_y)
             t.transform.translation.z = 0.0 # <--- Forzado al suelo
             t.transform.rotation.w = 1.0
             
+            self.customer_tf = t
             self.tf_broadcaster.sendTransform(t)
         except Exception as e:
             self.get_logger().error(f"Error en publish_human_tf: {e}")
+
+    def republish_customer_tf(self):
+        if self.customer_tf is not None:
+            self.customer_tf.header.stamp = (
+                self.get_clock().now().to_msg()
+            )
+
+            self.tf_broadcaster.sendTransform(
+                self.customer_tf
+            )        
 
 def main(args=None):
     rclpy.init(args=args)
