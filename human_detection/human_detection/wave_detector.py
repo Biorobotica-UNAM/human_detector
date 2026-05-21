@@ -16,19 +16,25 @@ import tf2_geometry_msgs
 class HumanDetectorNode(Node):
     def __init__(self):
         super().__init__('human_detector_node')
+
         self.bridge = CvBridge()
         self.detector = YoloDetector()
-        # Se mantiene como StaticTransformBroadcaster por tu requerimiento
-        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self) 
-        
-        # Buffer necesario para transformar la posición al suelo (base_link)
+
+        # Broadcaster TF dinámico
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+
+        # Buffer TF
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
+        # Variables
         self.latest_frame = None
         self.last_cloud = None
         self.frame_id = None
         self.camera_info = None  # Se llena una sola vez desde el topic
+
+        # Última TF detectada del customer
+        self.customer_tf = None
 
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -43,9 +49,20 @@ class HumanDetectorNode(Node):
         self.pointcloud_topic = self.get_parameter("pointcloud_topic").get_parameter_value().string_value
         self.camera_info_topic = self.get_parameter("camera_info_topic").get_parameter_value().string_value
 
-        # Suscripciones
+        self.pointcloud_topic = (
+            self.get_parameter("pointcloud_topic")
+            .get_parameter_value()
+            .string_value
+        )
+
+        # Subscripciones
         self.image_sub = self.create_subscription(
-            Image, self.image_topic, self.image_callback, 10)
+            Image,
+            self.image_topic,
+            self.image_callback,
+            10
+        )
+
         self.pcd_sub = self.create_subscription(
             PointCloud2, self.pointcloud_topic, self.pcd_callback, qos_profile)
         # Se destruye sola tras recibir el primer mensaje (intrínsecos no cambian)
@@ -241,9 +258,20 @@ class HumanDetectorNode(Node):
             t.transform.translation.z = 0.0 # <--- Forzado al suelo
             t.transform.rotation.w = 1.0
             
+            self.customer_tf = t
             self.tf_broadcaster.sendTransform(t)
         except Exception as e:
             self.get_logger().error(f"Error en publish_human_tf: {e}")
+
+    def republish_customer_tf(self):
+        if self.customer_tf is not None:
+            self.customer_tf.header.stamp = (
+                self.get_clock().now().to_msg()
+            )
+
+            self.tf_broadcaster.sendTransform(
+                self.customer_tf
+            )        
 
 def main(args=None):
     rclpy.init(args=args)
