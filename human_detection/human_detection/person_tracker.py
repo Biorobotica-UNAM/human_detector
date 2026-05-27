@@ -1,91 +1,58 @@
-#!/usr/bin/env python3
-# =============================================================================
-#  person_tracker.py  —  RoboCup-grade version
-#  Fixes vs original:
-#    [BUG-1] enable_callback ya no es un stub vacío. El nodo respeta el estado
-#            de enable y deja de procesar + publicar cuando está desactivado.
-#    [BUG-2] Limpieza de tracks al desactivar para no publicar estados residuales
-#            al re-activar el sistema.
-#  Mejoras:
-#    [OPT-1] Publicación de MarkerArray para TODOS los tracks confirmados, no
-#            solo el target. Facilita depuración en RViz2.
-#    [OPT-2] Reenganche de target perdido: si el target_track_id desaparece,
-#            el sistema busca el track confirmado más cercano a la última posición
-#            conocida en lugar de simplemente seleccionar el más centrado.
-#    [OPT-3] Descriptor de track enriquecido: incluye aspect ratio del bounding
-#            box para diferenciar mejor entre personas.
-#    [OPT-4] Publicación de diagnóstico: número de tracks activos y confianza.
-#    [OPT-5] Ventana de mediana ampliada y fallback iterativo para nube de puntos.
-# =============================================================================
-
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 import numpy as np
 import struct
 from scipy.optimize import linear_sum_assignment
-
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2 
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_interfaces.msg import YoloDetections, YoloDetection
 from geometry_msgs.msg import PointStamped
-from std_msgs.msg import Bool, Int32, Float32
 from std_srvs.srv import SetBool
+from std_msgs.msg import Float32
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 import tf2_geometry_msgs
 
-# Parámetros globales
-MIN_CONFIDENCE    = 0.85   # confianza mínima YOLO
-SMOOTHING_FACTOR  = 0.18   # suavizado de posición (no usado directamente, mantenido para compatibilidad)
-MAX_LOST_FRAMES   = 45     # ~1.5 s antes de descartar un track
-MATCH_THRESHOLD   = 400.0  # umbral de coste para asociar detección a track
-MIN_HITS_CONFIRM  = 3      # hits mínimos para confirmar un track
-REATTACH_RADIUS   = 1.5    # radio en píxeles para reenganche de target
 
+MIN_CONFIDENCE = 0.85      # 85% de confianza mínimo
+SMOOTHING_FACTOR = 0.18     # Suavizado de movimiento (0.1 a 0.5) menor = más suave/lento, mayor = más reactivo/rapido
+MAX_LOST_FRAMES = 45       # ~1.5 segundos de espera antes de buscar a otro humano
+MATCH_THRESHOLD = 400.0    # Umbral de asociación entre frames
+# --- Suavizado de cabeza ---
+HEAD_MOVEMENT_THRESHOLD = 0.02  
+POSITION_SMOOTHING = 0.25       # suavizado adicional de la posición 3D (menor = más suave)
 
 class Track:
-    """Mantiene el estado de una persona detectada a lo largo del tiempo."""
-
-    def __init__(self, track_id: int, pos_2d: np.ndarray, desc: np.ndarray):
-        self.id           = track_id
-        self.desc         = desc.copy()
-        self.age          = 0
-        self.hits         = 1
+    def __init__(self, track_id, pos_2d, desc):
+        self.id = track_id
+        self.desc = desc
+        self.age = 0
+        self.hits = 1
         self.is_confirmed = False
-        self.pos          = pos_2d.copy()
-        self.vel          = np.zeros(2)
-        self.last_pos     = pos_2d.copy()   
+        self.pos = pos_2d 
+        self.vel = np.array([0.0, 0.0])
 
     def predict(self):
-        self.last_pos = self.pos.copy()
         self.pos = self.pos + self.vel
         self.age += 1
 
-    def update(self, pos_2d: np.ndarray, desc: np.ndarray):
-        new_vel   = pos_2d - self.pos
-        self.vel  = 0.3 * new_vel + 0.7 * self.vel
-        self.last_pos = self.pos.copy()
-        self.pos  = pos_2d.copy()
-        self.desc = 0.5 * desc + 0.5 * self.desc
-        self.age  = 0
+    #filtro
+    def update(self, pos_2d, desc):
+    
+        new_vel = pos_2d - self.pos
+        self.vel = (1 - SMOOTHING_FACTOR) * self.vel + SMOOTHING_FACTOR * new_vel
+        self.pos = (1 - SMOOTHING_FACTOR) * self.pos + SMOOTHING_FACTOR * pos_2d
+        
+        if desc is not None:
+            self.desc = 0.95 * self.desc + 0.05 * desc
+        self.age = 0
         self.hits += 1
-        if self.hits >= MIN_HITS_CONFIRM:
-            self.is_confirmed = True
+        if self.hits >= 3: self.is_confirmed = True
 
-
-class PersonTracker(Node):
-
+class PersonTrackerNode(Node):
     def __init__(self):
-        super().__init__('person_tracker')
-        self.get_logger().info("INITIALIZING PERSON TRACKER ...")
-
-        # Estado de enable inicializado 
-        self.tracking_enabled = False
-        self.enable_active    = False  
-
-        self.tf_buffer   = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        super().__init__('person_tracker_node')
 
         qos_pc = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -93,314 +60,193 @@ class PersonTracker(Node):
             depth=1
         )
 
+        self.declare_parameter("point_cloud_topic", "/kinect/points")
+        self.declare_parameter("target_frame", "base_link")
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        # Variables de bloqueo
+        self.target_id = None
+        self.lost_frames = 0
+        self.tracking_enabled = False
+
+        # Suavizado de cabeza
+        self.last_published_pos = None
+        self.smoothed_pos = None
+
         # Suscriptores
-        self.sub_yolo   = self.create_subscription(
-            YoloDetections, '/vision/yolo_detections', self.yolo_callback, 10)
-        
-        self.sub_pc     = self.create_subscription(
-            PointCloud2, '/camera/camera/depth/color/points',
-            self.pc_callback, qos_profile=qos_pc)
-        
-        self.sub_enable = self.create_subscription(
-            Bool, '/vision/enable_continuous', self.enable_callback, 10)
+        self.sub_yolo = self.create_subscription(YoloDetections, '/vision/detections_list', self.callback, 10)
+        self.sub_pc = self.create_subscription(PointCloud2, self.get_parameter("point_cloud_topic").value, self.pc_callback, qos_pc)
 
-        # Publicadores 
-        self.pub_target     = self.create_publisher(PointStamped,  '/hri/human_tracking/target_point', 10)
-        self.pub_look_at    = self.create_publisher(PointStamped,  '/hri/human_tracking/look_at_point', 10)
-        self.pub_markers    = self.create_publisher(MarkerArray,   '/hri/human_tracking/markers', 10)
+        # Publicadores
+        self.pub_target = self.create_publisher(PointStamped, '/human_detection/target_point', 10)
+        self.pub_confidence = self.create_publisher(Float32, '/hri/human_tracking/confidence', 10)
+        self.pub_look_at = self.create_publisher(PointStamped, '/hardware/head/look_at', 10)
+        self.marker_pub = self.create_publisher(MarkerArray, '/human_detection/track_markers', 10)
 
-        # topic de Diagnóstico
-        self.pub_num_tracks = self.create_publisher(Int32,         '/hri/human_tracking/num_tracks', 10)
-        self.pub_confidence = self.create_publisher(Float32,       '/hri/human_tracking/confidence', 10)
-
-        # Servicio focus
-        self.srv_focus = self.create_service(
-            SetBool, '/vision/focus', self.handle_focus_service)
-
-        # Cliente de enable conti
+        self.srv_focus = self.create_service(SetBool, '/vision/focus', self.handle_focus_service)
         self.cli_enable_continuous = self.create_client(SetBool, '/vision/enable_continuous')
 
-    
-        self.tracks          = []
-        self.next_id         = 1
-        self.latest_pc       = None
-        self.target_track_id = None
-        self.last_target_pos = None  
+        self.latest_pc = None
+        self.tracks = []
+        self.next_id = 0
+        
+        self.get_logger().info(" human Tracker ready!")
 
-    def enable_callback(self, msg: Bool):
-        prev = self.enable_active
-        self.enable_active = msg.data
-
-        if not self.enable_active and prev:
-
-            # limpia estado al desactivar
-            self.get_logger().info("PersonTracker: DISABLED")
-            self.tracks          = []
-            self.target_track_id = None
-            self.last_target_pos = None
-            self.latest_pc       = None
-            ma = MarkerArray()
-            m = Marker()
-            m.action = Marker.DELETEALL
-            ma.markers.append(m)
-            self.pub_markers.publish(ma)
-
-        elif self.enable_active and not prev:
-            self.get_logger().info("PersonTracker: ENABLED")
-
-    # Servicio focus
     def handle_focus_service(self, request, response):
+        """Manejador del servicio para activar/desactivar el seguimiento visual."""
         self.tracking_enabled = request.data
-        self.get_logger().info(f"Focus state: {self.tracking_enabled}")
-
-        if self.cli_enable_continuous.service_is_ready():
-            req         = SetBool.Request()
-            req.data    = request.data
-            future      = self.cli_enable_continuous.call_async(req)
-            future.add_done_callback(self._vision_service_done_callback)
-            response.success = True
-            response.message = f"Focus propagated: {request.data}"
-        else:
-            self.get_logger().warn("Vision continuous service not available.")
-            response.success = False
-            response.message = "Vision service not ready."
-
+        self.cli_enable_continuous.call_async(SetBool.Request(data=self.tracking_enabled))
+        response.success = True
+        status = "ENABLED" if self.tracking_enabled else "DISABLED"
+        response.message = f"Head tracking focus is now {status}"
+        self.get_logger().info(response.message)
         return response
 
-    def _vision_service_done_callback(self, future):
-        try:
-            res = future.result()
-            self.get_logger().debug(f"Vision service OK: {res.message}")
-        except Exception as e:
-            self.get_logger().error(f"Vision service failed: {e}")
-
-    # Callback nube de puntos
     def pc_callback(self, msg):
-        if not self.enable_active:
-            return
         self.latest_pc = msg
 
-    # Callback YOLO 
-    def yolo_callback(self, msg):
-    
-        if not self.enable_active:
-            return
+    def get_3d_point(self, u, v):
+        if self.latest_pc is None: return None
+        # Muestreo circular: Si el centro falla, busca en los alrededores
+        search_pattern = [(0,0), (3,3), (-3,-3), (3,-3), (-3,3), (0,5), (0,-5)]
+        for du, dv in search_pattern:
+            try:
+                offset = (int(v+dv) * self.latest_pc.row_step) + (int(u+du) * self.latest_pc.point_step)
+                x, y, z = struct.unpack('fff', self.latest_pc.data[offset:offset+12])
+                if not np.isnan(x) and x != 0: return (x, y, z)
+            except: continue
+        return None
 
-        detections = [d for d in msg.detections
-                      if d.class_name == "person" and d.score >= MIN_CONFIDENCE]
+    def callback(self, msg):
+        current_dets = []
+        for det in msg.detections:
+            if det.class_name == "person" and det.confidence >= MIN_CONFIDENCE:
+                cx = (det.x_min + det.x_max) / 2
+                cy = det.y_min + (det.y_max - det.y_min) * 0.15 # ajuste para mover el punto dentro de un % del Bbox, grax
+                w, h = (det.x_max - det.x_min), (det.y_max - det.y_min)
+                desc = np.array([w/h, w*h]) if h != 0 else np.array([0.0, 0.0])
+                current_dets.append({'pos': np.array([cx, cy]), 'desc': desc})
 
-        for t in self.tracks:
-            t.predict()
+        for t in self.tracks: t.predict()
 
-        if detections:
-            det_positions   = []
-            det_descriptors = []
+        assigned_dets = set()
+        if self.tracks and current_dets:
+            cost_matrix = self._build_cost_matrix(current_dets)
+            row_ind, col_ind = linear_sum_assignment(cost_matrix)
+            for t_idx, d_idx in zip(row_ind, col_ind):
+                if cost_matrix[t_idx, d_idx] < MATCH_THRESHOLD:
+                    self.tracks[t_idx].update(current_dets[d_idx]['pos'], current_dets[d_idx]['desc'])
+                    assigned_dets.add(d_idx)
 
-            for d in detections:
-                cx = (d.box.x_min + d.box.x_max) / 2.0
-                cy = (d.box.y_min + d.box.y_max) / 2.0
-                w  =  d.box.x_max - d.box.x_min
-                h  =  d.box.y_max - d.box.y_min
-                det_positions.append(np.array([cx, cy]))
-                # Descriptor enriquecido: w, h, score, aspect ratio
-                aspect = w / (h + 1e-6)
-                det_descriptors.append(np.array([w, h, d.score, aspect]))
-
-            if not self.tracks:
-                for pos, desc in zip(det_positions, det_descriptors):
-                    self.tracks.append(Track(self.next_id, pos, desc))
-                    self.next_id += 1
-            else:
-                cost_matrix = np.zeros((len(self.tracks), len(det_positions)))
-                for i, t in enumerate(self.tracks):
-                    for j, d_pos in enumerate(det_positions):
-                        dist      = np.sum((t.pos - d_pos) ** 2)
-                        desc_dist = np.sum((t.desc - det_descriptors[j]) ** 2) * 50.0
-                        cost_matrix[i, j] = dist + desc_dist
-
-                row_ind, col_ind = linear_sum_assignment(cost_matrix)
-                assigned_tracks  = set()
-                assigned_dets    = set()
-
-                for r, c in zip(row_ind, col_ind):
-                    if cost_matrix[r, c] < MATCH_THRESHOLD:
-                        self.tracks[r].update(det_positions[c], det_descriptors[c])
-                        assigned_tracks.add(r)
-                        assigned_dets.add(c)
-
-                for j, d_pos in enumerate(det_positions):
-                    if j not in assigned_dets:
-                        self.tracks.append(Track(self.next_id, d_pos, det_descriptors[j]))
-                        self.next_id += 1
-
-        self.tracks = [t for t in self.tracks if t.age < MAX_LOST_FRAMES]
-        confirmed   = [t for t in self.tracks if t.is_confirmed]
-
-        if not confirmed:
-            self.target_track_id = None
-            self._publish_diagnostics(0, 0.0)
-            return
-
-        # Selección / reenganche de target
-        if self.target_track_id is not None:
-            target = next((t for t in confirmed if t.id == self.target_track_id), None)
-            if target is None:
+        self.tracks = [t for t in self.tracks if t.age < 20]
+        for i, det in enumerate(current_dets):
+            if i not in assigned_dets:
+                self.tracks.append(Track(self.next_id, det['pos'], det['desc']))
+                self.next_id += 1
         
-                if self.last_target_pos is not None:
-                    dists  = [np.linalg.norm(t.pos - self.last_target_pos) for t in confirmed]
-                    min_i  = int(np.argmin(dists))
-                    if dists[min_i] < REATTACH_RADIUS:
-                        target = confirmed[min_i]
-                        self.get_logger().info(
-                            f"Target reattached → track {target.id} "
-                            f"(dist={dists[min_i]:.2f}px)")
-                    else:
-                        confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
-                        target = confirmed[0]
-                else:
-                    confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
-                    target = confirmed[0]
-                self.target_track_id = target.id
-        else:
-            confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
-            target = confirmed[0]
-            self.target_track_id = target.id
+        self._process_output()
 
-        # Guardar ultima posicion del target para reenganche
-        self.last_target_pos = target.pos.copy()
+    def _build_cost_matrix(self, detections):
+        cost = np.zeros((len(self.tracks), len(detections)))
+        for i, tr in enumerate(self.tracks):
+            for j, det in enumerate(detections):
+                cost[i, j] = np.linalg.norm(tr.pos - det['pos']) + (np.abs(tr.desc[0] - det['desc'][0]) * 50)
+        return cost
 
-        if target is not None and self.latest_pc is not None:
-            p_stamped = self.extract_3d_point(target.pos, msg.header.stamp)
-            if p_stamped is not None:
-                self.publish_targets(p_stamped, target.id)
+    def _process_output(self):
+        if not self.tracks or self.latest_pc is None: return
 
-        conf = min(1.0, target.hits / 10.0) if target else 0.0
-        self._publish_diagnostics(len(confirmed), conf)
-
-        self._publish_all_markers(confirmed, target.id)
-
-    def extract_3d_point(self, pos_2d, stamp):
-        try:
-            pc  = self.latest_pc
-            px  = int(clamp(pos_2d[0], 0, pc.width  - 1))
-            py  = int(clamp(pos_2d[1], 0, pc.height - 1))
-
-            offset   = py * pc.row_step + px * pc.point_step
-            data_xyz = pc.data[offset: offset + 12]
-            if len(data_xyz) < 12:
-                return None
-
-            x, y, z = struct.unpack_from('fff', data_xyz)
-
-            if np.isnan(x) or np.isnan(y) or np.isnan(z) or z <= 0.1:
-                # Ventana de búsqueda ampliada con mediana
-                window = 15
-                x_list, y_list, z_list = [], [], []
-                for dy in range(-window // 2, window // 2 + 1):
-                    for dx in range(-window // 2, window // 2 + 1):
-                        nx = int(clamp(px + dx, 0, pc.width  - 1))
-                        ny = int(clamp(py + dy, 0, pc.height - 1))
-                        no = ny * pc.row_step + nx * pc.point_step
-                        d  = pc.data[no: no + 12]
-                        if len(d) == 12:
-                            xi, yi, zi = struct.unpack_from('fff', d)
-                            if not np.isnan(xi) and not np.isnan(zi) and zi > 0.1:
-                                x_list.append(xi)
-                                y_list.append(yi)
-                                z_list.append(zi)
-                if z_list:
-                    x = float(np.median(x_list))
-                    y = float(np.median(y_list))
-                    z = float(np.median(z_list))
-                else:
-                    return None
-
-            p = PointStamped()
-            p.header.frame_id = pc.header.frame_id
-            p.header.stamp    = stamp
-            p.point.x = float(x)
-            p.point.y = float(y)
-            p.point.z = float(z)
-            return p
-
-        except Exception as e:
-            self.get_logger().error(f"Error extracting 3D point: {e}")
-            return None
-
-    # Publicar target y look_at
-    def publish_targets(self, p, tid):
-        try:
-            trans   = self.tf_buffer.lookup_transform(
-                "base_link", p.header.frame_id, rclpy.time.Time())
-            p_base  = tf2_geometry_msgs.do_transform_point(p, trans)
-            self.pub_target.publish(p_base)
-            if self.tracking_enabled:
-                self.pub_look_at.publish(p_base)
-        except Exception as e:
-            self.get_logger().warn(f"Transform error: {e}")
-
-    def _publish_all_markers(self, confirmed_tracks, target_id):
-        ma = MarkerArray()
-
-        # Limpiar markers anteriores
-        clear = Marker()
-        clear.action = Marker.DELETEALL
-        ma.markers.append(clear)
-
-        for t in confirmed_tracks:
-            is_target = (t.id == target_id)
-            m = Marker()
-            m.header.frame_id = "base_link"
-            m.header.stamp    = self.get_clock().now().to_msg()
-            m.ns              = "persons"
-            m.id              = t.id
-            m.type            = Marker.CYLINDER
-            m.action          = Marker.ADD
-            m.scale.x = m.scale.y = 0.35
-            m.scale.z = 0.2
-            m.pose.position.z = 0.1
-            if is_target:
-                m.color.r, m.color.g, m.color.b, m.color.a = 1.0, 0.3, 0.0, 0.8
+        # Lógica de Bloqueo (Filtra solo al ID elegido)
+        selected_track = None
+        if self.target_id is not None:
+            selected_track = next((t for t in self.tracks if t.id == self.target_id), None)
+            
+            if not selected_track:
+                self.lost_frames += 1
+                if self.lost_frames % 10 == 0:
+                    self.get_logger().warn(f"Person {self.target_id} lost...")
             else:
-                m.color.r, m.color.g, m.color.b, m.color.a = 0.3, 0.3, 1.0, 0.5
-            ma.markers.append(m)
+                self.lost_frames = 0
 
-            # Label
-            lbl = Marker()
-            lbl.header    = m.header
-            lbl.ns        = "person_labels"
-            lbl.id        = t.id
-            lbl.type      = Marker.TEXT_VIEW_FACING
-            lbl.text      = f"{'TARGET' if is_target else 'track'} #{t.id}"
-            lbl.scale.z   = 0.2
-            lbl.color.r   = lbl.color.g = lbl.color.b = lbl.color.a = 1.0
-            ma.markers.append(lbl)
+        if self.target_id is None or self.lost_frames >= MAX_LOST_FRAMES:
+            confirmed = [t for t in self.tracks if t.is_confirmed]
+            if confirmed:
+                center_x = self.latest_pc.width / 2
+                confirmed.sort(key=lambda t: abs(t.pos[0] - center_x))
+                #confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
+                self.target_id = confirmed[0].id
+                self.get_logger().info(f" New Person: ID {self.target_id}")
 
-        self.pub_markers.publish(ma)
+        if selected_track:
+            raw_3d = self.get_3d_point(selected_track.pos[0], selected_track.pos[1])
+            if raw_3d:
+                self._send_outputs(raw_3d, selected_track.id)
 
-    # Diagnost
-    def _publish_diagnostics(self, num_tracks: int, confidence: float):
-        n_msg      = Int32();   n_msg.data = num_tracks
-        c_msg      = Float32(); c_msg.data = float(confidence)
-        self.pub_num_tracks.publish(n_msg)
-        self.pub_confidence.publish(c_msg)
+    def _send_outputs(self, coords, tid):
+        p = PointStamped()
+        p.header.frame_id = self.latest_pc.header.frame_id
+        p.header.stamp = self.get_clock().now().to_msg()
+        p.point.x, p.point.y, p.point.z = map(float, coords)
 
+        try:
+            t_frame = self.get_parameter("target_frame").value
+            trans = self.tf_buffer.lookup_transform(t_frame, p.header.frame_id, rclpy.time.Time())
+            p_base = tf2_geometry_msgs.do_transform_point(p, trans)
 
-def clamp(n, minn, maxn):
-    return max(min(n, maxn), minn)
+            new_pos = np.array([p_base.point.x, p_base.point.y, p_base.point.z])
+            if self.smoothed_pos is None:
+                self.smoothed_pos = new_pos
+            else:
+                self.smoothed_pos = (1 - POSITION_SMOOTHING) * self.smoothed_pos + POSITION_SMOOTHING * new_pos
+            p_base.point.x, p_base.point.y, p_base.point.z = self.smoothed_pos
 
+            conf_msg = Float32()
+            conf_msg.data = float(min(1.0, self.tracks[0].hits / 10.0)) if self.tracks else 0.0 
+            self.pub_confidence.publish(conf_msg)
+            self.pub_target.publish(p_base)
+            
+            # 2. Publicamos a look_at SOLO si el servicio está en True
+            if self.tracking_enabled:
+                if self.last_published_pos is None or \
+                   np.linalg.norm(self.smoothed_pos - self.last_published_pos) > HEAD_MOVEMENT_THRESHOLD:
+                    self.pub_look_at.publish(p_base)
+                    self.last_published_pos = self.smoothed_pos.copy()
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = PersonTracker()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+            self._publish_marker(p_base, tid)
+        except Exception as e:
+            self.get_logger().error(f"Transform error: {e}")
 
+    def _publish_marker(self, p_base, tid):
+        ma = MarkerArray()
+        m = Marker()
+        m.header = p_base.header
+        m.id = 999
+        m.type = Marker.TEXT_VIEW_FACING
+        m.text = f"TARGET LOCKED: {tid}"
+        m.pose.position = p_base.point
+        m.pose.position.z += 0.6
+        m.scale.z = 0.25
+        m.color.r, m.color.g, m.color.b, m.color.a = 1.0, 0.0, 0.0, 1.0
+        
+        m2 = Marker()
+        m2.header = p_base.header
+        m2.id = tid
+        m2.type = Marker.CYLINDER
+        m2.pose.position = p_base.point
+        m2.scale.x = m2.scale.y = 0.3; m2.scale.z = 0.1
+        m2.color.r, m2.color.a = 1.0, 0.7
+        
+        ma.markers.extend([m, m2])
+        self.marker_pub.publish(ma)
+
+def main():
+    rclpy.init()
+    node = PersonTrackerNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
