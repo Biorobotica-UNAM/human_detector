@@ -20,10 +20,8 @@ class HumanDetectorNode(Node):
         self.bridge = CvBridge()
         self.detector = YoloDetector()
 
-        # Broadcaster TF dinámico
+        # Broadcaster TF dinámico y Buffer
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
-
-        # Buffer TF
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
@@ -31,9 +29,7 @@ class HumanDetectorNode(Node):
         self.latest_frame = None
         self.last_cloud = None
         self.frame_id = None
-        self.camera_info = None  # Se llena una sola vez desde el topic
-
-        # Última TF detectada del customer
+        self.camera_info = None  
         self.customer_tf = None
 
         qos_profile = QoSProfile(
@@ -41,104 +37,29 @@ class HumanDetectorNode(Node):
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
-        self.declare_parameter("image_topic", "/kinect/image_raw") #/head_rgbd_sensor/rgb/image_rect_color
-        self.declare_parameter("pointcloud_topic", "/kinect/points") #/hardware/camera/points
+        self.declare_parameter("image_topic", "/kinect/image_raw")
+        self.declare_parameter("pointcloud_topic", "/kinect/points")
         self.declare_parameter("camera_info_topic", "/kinect/camera_info")
 
         self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
         self.pointcloud_topic = self.get_parameter("pointcloud_topic").get_parameter_value().string_value
         self.camera_info_topic = self.get_parameter("camera_info_topic").get_parameter_value().string_value
 
-        self.pointcloud_topic = (
-            self.get_parameter("pointcloud_topic")
-            .get_parameter_value()
-            .string_value
-        )
-
         # Subscripciones
-        self.image_sub = self.create_subscription(
-            Image,
-            self.image_topic,
-            self.image_callback,
-            10
-        )
-
-        self.pcd_sub = self.create_subscription(
-            PointCloud2, self.pointcloud_topic, self.pcd_callback, qos_profile)
-        # Se destruye sola tras recibir el primer mensaje (intrínsecos no cambian)
-        self.camera_info_sub = self.create_subscription(
-            CameraInfo, self.camera_info_topic, self._camera_info_callback, 10)
+        self.image_sub = self.create_subscription(Image, self.image_topic, self.image_callback, 10)
+        self.pcd_sub = self.create_subscription(PointCloud2, self.pointcloud_topic, self.pcd_callback, qos_profile)
+        self.camera_info_sub = self.create_subscription(CameraInfo, self.camera_info_topic, self._camera_info_callback, 10)
         
         self.human_pose_image_pub = self.create_publisher(Image, '/human_detection/pose_image_wrist', 10)
         
+        # Servicio actualizado
         self.create_service(DetectPointing, '/human_detection/detect_wrist', self.handle_service)
-        self.get_logger().info("[VISION NODE] Nodo listo. Esperando llamada del servicio...")
+        self.get_logger().info("[VISION NODE] Nodo listo. Esperando peticiones...")
 
     def _camera_info_callback(self, msg):
-        """Guarda los intrínsecos una sola vez y se da de baja."""
         self.camera_info = {'fx': msg.k[0], 'fy': msg.k[4], 'cx': msg.k[2], 'cy': msg.k[5]}
         self.destroy_subscription(self.camera_info_sub)
         self.get_logger().info(f"[VISION NODE] CameraInfo recibido: fx={msg.k[0]:.1f} fy={msg.k[4]:.1f}")
-
-    def _project_to_floor(self, u, v):
-        """
-        Fallback: proyecta el rayo cámara->pixel hasta el plano Z=0 en base_link.
-        Devuelve (x, y, z) en el frame de la cámara, igual que get_3d_point,
-        para que el resto del pipeline no cambie nada.
-        Retorna None si no hay CameraInfo o si la transformada falla.
-        """
-        if self.camera_info is None or self.last_cloud is None:
-            return None
-        try:
-            ci = self.camera_info
-            # Dirección del rayo en frame cámara (Z=1 normalizado)
-            ray = np.array([(u - ci['cx']) / ci['fx'],
-                            (v - ci['cy']) / ci['fy'],
-                            1.0])
-
-            cam_frame = self.last_cloud.header.frame_id
-            tf = self.tf_buffer.lookup_transform(
-                'base_link', cam_frame,
-                rclpy.time.Time(), rclpy.duration.Duration(seconds=0.2))
-
-            # Rotación cámara -> base_link
-            q = tf.transform.rotation
-            R = np.array([
-                [1-2*(q.y**2+q.z**2),   2*(q.x*q.y-q.z*q.w), 2*(q.x*q.z+q.y*q.w)],
-                [2*(q.x*q.y+q.z*q.w),   1-2*(q.x**2+q.z**2), 2*(q.y*q.z-q.x*q.w)],
-                [2*(q.x*q.z-q.y*q.w),   2*(q.y*q.z+q.x*q.w), 1-2*(q.x**2+q.y**2)]
-            ])
-            origin = np.array([tf.transform.translation.x,
-                               tf.transform.translation.y,
-                               tf.transform.translation.z])
-
-            ray_base = R @ ray
-            if abs(ray_base[2]) < 1e-6:
-                return None  # Rayo paralelo al suelo
-
-            # Intersección con plano Z=0 (suelo en base_link)
-            t = -origin[2] / ray_base[2]
-            if t < 0:
-                return None
-            p_base = origin + t * ray_base
-
-            # Convertimos de vuelta al frame de cámara para no romper el pipeline
-            p_base_stamped = PointStamped()
-            p_base_stamped.header.frame_id = 'base_link'
-            p_base_stamped.header.stamp = rclpy.time.Time().to_msg()
-            p_base_stamped.point.x, p_base_stamped.point.y, p_base_stamped.point.z = \
-                float(p_base[0]), float(p_base[1]), 0.0
-
-            tf_inv = self.tf_buffer.lookup_transform(
-                cam_frame, 'base_link',
-                rclpy.time.Time(), rclpy.duration.Duration(seconds=0.2))
-            p_cam = tf2_geometry_msgs.do_transform_point(p_base_stamped, tf_inv)
-
-            return np.array([p_cam.point.x, p_cam.point.y, p_cam.point.z])
-
-        except Exception as e:
-            self.get_logger().warn(f"[VISION NODE] Fallback proyección fallido: {e}")
-            return None
 
     def image_callback(self, msg):
         if self.frame_id is None:
@@ -147,6 +68,123 @@ class HumanDetectorNode(Node):
 
     def pcd_callback(self, msg):
         self.last_cloud = msg
+
+    # --- LÓGICA DE DETECCIÓN DE GESTOS EN BASE A KEYPOINTS DE YOLO ---
+    # kp[5]=L_Shoulder, kp[6]=R_Shoulder, kp[7]=L_Elbow, kp[8]=R_Elbow, kp[9]=L_Wrist, kp[10]=R_Wrist
+
+    def is_waving(self, kp, side="any"):
+        l_up = kp[9][1] < kp[5][1] if (kp[9][2] > 0.3 and kp[5][2] > 0.3) else False
+        r_up = kp[10][1] < kp[6][1] if (kp[10][2] > 0.3 and kp[6][2] > 0.3) else False
+        
+        if side == "left" and l_up: return "left", 9
+        if side == "right" and r_up: return "right", 10
+        if side == "any" or side == "":
+            if l_up: return "left", 9
+            if r_up: return "right", 10
+        return None, None
+
+    def is_raising(self, kp, side="any"):
+        l_raise = (kp[9][1] < kp[7][1] < kp[5][1]) if (kp[9][2] > 0.3 and kp[7][2] > 0.3 and kp[5][2] > 0.3) else False
+        r_raise = (kp[10][1] < kp[8][1] < kp[6][1]) if (kp[10][2] > 0.3 and kp[8][2] > 0.3 and kp[6][2] > 0.3) else False
+
+        if side == "left" and l_raise: return "left", 9
+        if side == "right" and r_raise: return "right", 10
+        if side == "any" or side == "":
+            if l_raise: return "left", 9
+            if r_raise: return "right", 10
+        return None, None
+
+    def is_pointing(self, kp, side="any"):
+        # Izquierdo apuntando: Muñeca a la derecha/izquierda del hombro de forma extendida
+        l_ext = abs(kp[9][0] - kp[5][0]) > 40 and (kp[9][1] < kp[5][1] + 30) if (kp[9][2] > 0.3 and kp[5][2] > 0.3) else False
+        r_ext = abs(kp[10][0] - kp[6][0]) > 40 and (kp[10][1] < kp[6][1] + 30) if (kp[10][2] > 0.3 and kp[6][2] > 0.3) else False
+
+        if side == "left" and l_ext: return "left", 9
+        if side == "right" and r_ext: return "right", 10
+        if side == "any" or side == "":
+            if l_ext: return "left", 9
+            if r_ext: return "right", 10
+        return None, None
+
+    def handle_service(self, request, response):
+        response.human_detected = False
+        response.direction = "none"
+        response.point = PointStamped()
+
+        if self.latest_frame is None or self.last_cloud is None:
+            self.get_logger().warn("Sensores no listos (RGB/PCD)")
+            return response
+
+        # Leer argumentos del request
+        action = request.action_type.lower().strip()
+        side = request.arm_side.lower().strip() if request.arm_side else "any"
+
+        frame = self.latest_frame.copy()
+        detections = self.detector.infer(frame)
+        
+        target_person = None
+        detected_side = None
+        wrist_kp_idx = None
+
+        for det in detections:
+            kp = det['keypoints']
+            
+            # Filtrar según la acción solicitada
+            if action == "wave":
+                detected_side, wrist_kp_idx = self.is_waving(kp, side)
+            elif action == "raising" or action == "raise":
+                detected_side, wrist_kp_idx = self.is_raising(kp, side)
+            elif action == "pointing" or action == "point":
+                detected_side, wrist_kp_idx = self.is_pointing(kp, side)
+            else:
+                self.get_logger().error(f"Acción '{action}' no soportada.")
+                return response
+
+            if detected_side is not None:
+                target_person = det
+                break # Encontró la primera persona que cumple la condición
+
+        if target_person:
+            kp = target_person['keypoints']
+            # Target pixel (en este caso la muñeca objetivo detectada)
+            tgt_x = int(kp[wrist_kp_idx][0])
+            tgt_y = int(kp[wrist_kp_idx][1])
+            
+            p3d = self.get_3d_point(tgt_x, tgt_y)
+            if p3d is None:
+                p3d = self._project_to_floor(tgt_x, tgt_y)
+
+            if p3d is not None:
+                response.human_detected = True
+                response.point.header.stamp = self.last_cloud.header.stamp
+                response.point.header.frame_id = self.frame_id
+                response.point.point.x = float(p3d[0])
+                response.point.point.y = float(p3d[1])
+                response.point.point.z = float(p3d[2])
+            
+                # Calcular la zona de la pantalla para la dirección
+                horiz = "center"
+                if tgt_x < 213: horiz = "left"
+                elif tgt_x > 426: horiz = "right"
+                
+                dist_stat = "ideal" if 1.2 < p3d[2] < 2.8 else "reposition"
+                
+                # El string de respuesta ahora incluye la acción, el brazo y la posición espacial
+                response.direction = f"{action}_{detected_side}_{horiz}_{dist_stat}"
+                clean_name = response.direction.replace(" ", "_")
+                
+                self.get_logger().info(f"Gesto detectado con éxito: {response.direction}")
+                self.publish_human_tf(p3d, clean_name, self.last_cloud.header.stamp)
+                
+            # Feedback Visual en la imagen debug
+            cv2.circle(frame, (tgt_x, tgt_y), 20, (0, 255, 0), -1)
+            cv2.putText(frame, f"{action}_{detected_side}", (tgt_x - 30, tgt_y - 30), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+            
+            debug_img = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
+            self.human_pose_image_pub.publish(debug_img)
+
+        return response
 
     def get_3d_point(self, u, v):
         if self.last_cloud is None: return None
@@ -171,74 +209,83 @@ class HumanDetectorNode(Node):
         if not points: return None
         return np.mean(points, axis=0)
 
-    def handle_service(self, request, response):
-        response.human_detected = False
-        response.direction = "none"
-        #response.pose_image = Image()
+    def _project_to_floor(self, u, v):
+        """
+        Proyecta el rayo cámara->pixel hasta el plano Z=0 en base_link de forma segura.
+        """
+        if self.camera_info is None or self.last_cloud is None:
+            return None
+        try:
+            ci = self.camera_info
+            cam_frame = self.last_cloud.header.frame_id
 
-        response.point = PointStamped()
+            # 1. Dirección del rayo en el frame local de la cámara (Z=1.0)
+            ray_x = (u - ci['cx']) / ci['fx']
+            ray_y = (v - ci['cy']) / ci['fy']
+            ray_z = 1.0
 
-        if self.latest_frame is None or self.last_cloud is None:
-            self.get_logger().warn("Sensores no listos (RGB/PCD)")
-            return response
+            # 2. Obtenemos la transformada desde la cámara hacia base_link
+            tf_cam_to_base = self.tf_buffer.lookup_transform(
+                'base_link', cam_frame,
+                rclpy.time.Time(), rclpy.duration.Duration(seconds=0.2))
 
-        frame = self.latest_frame.copy()
-        detections = self.detector.infer(frame)
-        best_person = None
+            # 3. Transformamos el origen de la cámara (0,0,0) a base_link
+            origin_cam = PointStamped()
+            origin_cam.header.frame_id = cam_frame
+            origin_cam.point.x, origin_cam.point.y, origin_cam.point.z = 0.0, 0.0, 0.0
+            origin_base = tf2_geometry_msgs.do_transform_point(origin_cam, tf_cam_to_base)
 
-        for det in detections:
-            kp = det['keypoints']
-            l_up = kp[9][1] < kp[5][1] if kp[9][2] > 0.3 else False
-            r_up = kp[10][1] < kp[6][1] if kp[10][2] > 0.3 else False
-            if l_up or r_up:
-                best_person = det
-                break
+            # 4. Transformamos el punto del rayo (ray_x, ray_y, ray_z) a base_link
+            ray_point_cam = PointStamped()
+            ray_point_cam.header.frame_id = cam_frame
+            ray_point_cam.point.x, ray_point_cam.point.y, ray_point_cam.point.z = ray_x, ray_y, ray_z
+            ray_point_base = tf2_geometry_msgs.do_transform_point(ray_point_cam, tf_cam_to_base)
 
-        if best_person:
-            kp = best_person['keypoints']
-            mid_x = int((kp[5][0] + kp[6][0]) / 2)
-            mid_y = int((kp[5][1] + kp[6][1]) / 2)
-            p3d = self.get_3d_point(mid_x, mid_y) or self._project_to_floor(mid_x, mid_y)  # <-- fallback
+            # 5. Calculamos el vector director del rayo expresado en base_link
+            vec_x = ray_point_base.point.x - origin_base.point.x
+            vec_y = ray_point_base.point.y - origin_base.point.y
+            vec_z = ray_point_base.point.z - origin_base.point.z
 
-            if p3d is not None:
-                response.human_detected = True
-                response.point.header.stamp = self.last_cloud.header.stamp
-                response.point.header.frame_id = self.frame_id
-                response.point.point.x = float(p3d[0])
-                response.point.point.y = float(p3d[1])
-                response.point.point.z = float(p3d[2])
+            if abs(vec_z) < 1e-6:
+                return None  # El rayo es paralelo al suelo
+
+            # 6. Intersección de la línea con el plano Z=0 en base_link
+            t = -origin_base.point.z / vec_z
+            if t < 0:
+                return None  # La intersección queda detrás de la cámara
+
+            p_base_x = origin_base.point.x + t * vec_x
+            p_base_y = origin_base.point.y + t * vec_y
+            p_base_z = 0.0  # Forzado en el suelo de base_link
+
+            # 7. Regresamos el punto al frame de la cámara para no romper tu pipeline
+            p_base_stamped = PointStamped()
+            p_base_stamped.header.frame_id = 'base_link'
+            p_base_stamped.header.stamp = rclpy.time.Time().to_msg()
+            p_base_stamped.point.x, p_base_stamped.point.y, p_base_stamped.point.z = p_base_x, p_base_y, p_base_z
+
+            tf_base_to_cam = self.tf_buffer.lookup_transform(
+                cam_frame, 'base_link',
+                rclpy.time.Time(), rclpy.duration.Duration(seconds=0.2))
             
-                
-                horiz = "center"
-                if mid_x < 213: horiz = "left"
-                elif mid_x > 426: horiz = "right"
-                
-                dist_stat = "ideal" if 1.2 < p3d[2] < 2.8 else "reposition"
-                response.direction = f"{horiz}_{dist_stat}"
-                clean_name = response.direction.replace(" ", "_")
-                self.get_logger().info(f"Detección: {response.direction} in position X={p3d[0]:.2f}, Y={p3d[1]:.2f}, Z={p3d[2]:.2f}")
-                self.publish_human_tf(p3d, clean_name, self.last_cloud.header.stamp)
-                
-            
-            cv2.circle(frame, (mid_x, mid_y), 20, (0, 255, 0), -1)
-            debug_img = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
-            self.human_pose_image_pub.publish(debug_img)
+            p_cam = tf2_geometry_msgs.do_transform_point(p_base_stamped, tf_base_to_cam)
 
-        return response
-    
+            return np.array([p_cam.point.x, p_cam.point.y, p_cam.point.z])
+
+        except Exception as e:
+            self.get_logger().warn(f"[VISION NODE] Fallback proyección fallido: {e}")
+            return None
+
     def publish_human_tf(self, p3d, name, stamp):
         try:
-            # Creamos el punto en el frame de la cámara
             p_cam = PointStamped()
             p_cam.header.stamp = stamp
             p_cam.header.frame_id = self.last_cloud.header.frame_id
             p_cam.point.x, p_cam.point.y, p_cam.point.z = map(float, p3d)
 
-            # Transformamos a base_link para obtener coordenadas respecto al suelo del robot
             transform = self.tf_buffer.lookup_transform('base_link', p_cam.header.frame_id, rclpy.time.Time(), rclpy.duration.Duration(seconds=0.1))
             p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
 
-            # Cálculo de offset de 0.5m
             dist = np.sqrt(p_base.point.x**2 + p_base.point.y**2)
             offset = 0.7
             if dist > offset:
@@ -247,15 +294,13 @@ class HumanDetectorNode(Node):
             else:
                 f_x, f_y = p_base.point.x, p_base.point.y
 
-            # Publicamos la TF estática referenciada a base_link
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = 'base_link'
             t.child_frame_id = 'customer'
-            
             t.transform.translation.x = float(f_x)
             t.transform.translation.y = float(f_y)
-            t.transform.translation.z = 0.0 # <--- Forzado al suelo
+            t.transform.translation.z = 0.0 
             t.transform.rotation.w = 1.0
             
             self.customer_tf = t
@@ -263,15 +308,10 @@ class HumanDetectorNode(Node):
         except Exception as e:
             self.get_logger().error(f"Error en publish_human_tf: {e}")
 
-    def republish_customer_tf(self):
+    def rpub_customer_tf(self):
         if self.customer_tf is not None:
-            self.customer_tf.header.stamp = (
-                self.get_clock().now().to_msg()
-            )
-
-            self.tf_broadcaster.sendTransform(
-                self.customer_tf
-            )        
+            self.customer_tf.header.stamp = self.get_clock().now().to_msg()
+            self.tf_broadcaster.sendTransform(self.customer_tf)        
 
 def main(args=None):
     rclpy.init(args=args)
