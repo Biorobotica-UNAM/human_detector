@@ -8,7 +8,7 @@ from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_interfaces.msg import YoloDetections, YoloDetection
 from geometry_msgs.msg import PointStamped
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Trigger
 from std_msgs.msg import Float32
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -19,6 +19,7 @@ MIN_CONFIDENCE = 0.85      # 85% de confianza mínimo
 SMOOTHING_FACTOR = 0.18     # Suavizado de movimiento (0.1 a 0.5) menor = más suave/lento, mayor = más reactivo/rapido
 MAX_LOST_FRAMES = 45       # ~1.5 segundos de espera antes de buscar a otro humano
 MATCH_THRESHOLD = 400.0    # Umbral de asociación entre frames
+
 # --- Suavizado de cabeza ---
 HEAD_MOVEMENT_THRESHOLD = 0.02  
 POSITION_SMOOTHING = 0.25       # suavizado adicional de la posición 3D (menor = más suave)
@@ -86,6 +87,8 @@ class PersonTrackerNode(Node):
         self.marker_pub = self.create_publisher(MarkerArray, '/human_detection/track_markers', 10)
 
         self.srv_focus = self.create_service(SetBool, '/vision/focus', self.handle_focus_service)
+        self.srv_focus_enable = self.create_service(Trigger,'/vision/focus/enable', self.handle_focus_enable_service)
+        self.srv_focus_disable = self.create_service(Trigger,'/vision/focus/disable', self.handle_focus_disable_service)
         self.cli_enable_continuous = self.create_client(SetBool, '/vision/enable_continuous')
 
         self.latest_pc = None
@@ -93,6 +96,22 @@ class PersonTrackerNode(Node):
         self.next_id = 0
         
         self.get_logger().info(" human Tracker ready!")
+
+    def handle_focus_enable_service(self, request, response):
+        self.tracking_enabled = True
+        self.cli_enable_continuous.call_async(SetBool.Request(data=True))
+        response.success = True
+        response.message = "Head tracking focus ENABLED"
+        self.get_logger().info(response.message)
+        return response
+
+    def handle_focus_disable_service(self, request, response):
+        self.tracking_enabled = False
+        self.cli_enable_continuous.call_async(SetBool.Request(data=False))
+        response.success = True
+        response.message = "Head tracking focus DISABLED"
+        self.get_logger().info(response.message)
+        return response
 
     def handle_focus_service(self, request, response):
         """Manejador del servicio para activar/desactivar el seguimiento visual."""

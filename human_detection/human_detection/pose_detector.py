@@ -13,6 +13,10 @@ from human_interfaces.srv import DetectPointing
 from .yolo_model import YoloDetector
 import tf2_geometry_msgs 
 
+CONF = 0.3
+UMBRAL_DIST = 40
+UMBRAL_EXT = 30
+
 class HumanDetectorNode(Node):
     def __init__(self):
         super().__init__('human_detector_node')
@@ -69,7 +73,6 @@ class HumanDetectorNode(Node):
     def pcd_callback(self, msg):
         self.last_cloud = msg
 
-    # --- LÓGICA DE DETECCIÓN DE GESTOS EN BASE A KEYPOINTS DE YOLO ---
     # kp[5]=L_Shoulder, kp[6]=R_Shoulder, kp[7]=L_Elbow, kp[8]=R_Elbow, kp[9]=L_Wrist, kp[10]=R_Wrist
 
     def is_waving(self, kp, side="any"):
@@ -95,15 +98,47 @@ class HumanDetectorNode(Node):
         return None, None
 
     def is_pointing(self, kp, side="any"):
-        # Izquierdo apuntando: Muñeca a la derecha/izquierda del hombro de forma extendida
-        l_ext = abs(kp[9][0] - kp[5][0]) > 40 and (kp[9][1] < kp[5][1] + 30) if (kp[9][2] > 0.3 and kp[5][2] > 0.3) else False
-        r_ext = abs(kp[10][0] - kp[6][0]) > 40 and (kp[10][1] < kp[6][1] + 30) if (kp[10][2] > 0.3 and kp[6][2] > 0.3) else False
 
-        if side == "left" and l_ext: return "left", 9
-        if side == "right" and r_ext: return "right", 10
-        if side == "any" or side == "":
-            if l_ext: return "left", 9
-            if r_ext: return "right", 10
+        if kp[9][2] > CONF and kp[5][2] > CONF:
+            dx_l = abs(kp[9][0] - kp[5][0])
+            dy_l = kp[9][1] - kp[5][1]      
+            extended_l = dx_l > UMBRAL_DIST 
+
+            l_up   = extended_l and dy_l < -UMBRAL_EXT 
+            l_ext  = extended_l and abs(dy_l) <= UMBRAL_EXT 
+            l_down = extended_l and dy_l > UMBRAL_EXT    
+        else:
+            l_up = l_ext = l_down = False
+
+        if kp[10][2] > CONF and kp[6][2] > CONF:
+            dx_r = abs(kp[10][0] - kp[6][0])
+            dy_r = kp[10][1] - kp[6][1]
+            extended_r = dx_r > UMBRAL_DIST
+
+            r_up   = extended_r and dy_r < -UMBRAL_EXT
+            r_ext  = extended_r and abs(dy_r) <= UMBRAL_EXT
+            r_down = extended_r and dy_r > UMBRAL_EXT
+        else:
+            r_up = r_ext = r_down = False
+
+        if side == "left":
+            if l_up:   return "left_up",   9
+            if l_ext:  return "left_ext",  9
+            if l_down: return "left_down", 9
+
+        elif side == "right":
+            if r_up:   return "right_up",   10
+            if r_ext:  return "right_ext",  10
+            if r_down: return "right_down", 10
+
+        else: 
+            if l_up:   return "left_up",   9
+            if l_ext:  return "left_ext",  9
+            if l_down: return "left_down", 9
+            if r_up:   return "right_up",   10
+            if r_ext:  return "right_ext",  10
+            if r_down: return "right_down", 10
+
         return None, None
 
     def handle_service(self, request, response):
@@ -219,29 +254,23 @@ class HumanDetectorNode(Node):
             ci = self.camera_info
             cam_frame = self.last_cloud.header.frame_id
 
-            # 1. Dirección del rayo en el frame local de la cámara (Z=1.0)
             ray_x = (u - ci['cx']) / ci['fx']
             ray_y = (v - ci['cy']) / ci['fy']
             ray_z = 1.0
 
-            # 2. Obtenemos la transformada desde la cámara hacia base_link
             tf_cam_to_base = self.tf_buffer.lookup_transform(
                 'base_link', cam_frame,
                 rclpy.time.Time(), rclpy.duration.Duration(seconds=0.2))
 
-            # 3. Transformamos el origen de la cámara (0,0,0) a base_link
             origin_cam = PointStamped()
             origin_cam.header.frame_id = cam_frame
             origin_cam.point.x, origin_cam.point.y, origin_cam.point.z = 0.0, 0.0, 0.0
             origin_base = tf2_geometry_msgs.do_transform_point(origin_cam, tf_cam_to_base)
 
-            # 4. Transformamos el punto del rayo (ray_x, ray_y, ray_z) a base_link
             ray_point_cam = PointStamped()
             ray_point_cam.header.frame_id = cam_frame
             ray_point_cam.point.x, ray_point_cam.point.y, ray_point_cam.point.z = ray_x, ray_y, ray_z
             ray_point_base = tf2_geometry_msgs.do_transform_point(ray_point_cam, tf_cam_to_base)
-
-            # 5. Calculamos el vector director del rayo expresado en base_link
             vec_x = ray_point_base.point.x - origin_base.point.x
             vec_y = ray_point_base.point.y - origin_base.point.y
             vec_z = ray_point_base.point.z - origin_base.point.z
@@ -249,7 +278,6 @@ class HumanDetectorNode(Node):
             if abs(vec_z) < 1e-6:
                 return None  # El rayo es paralelo al suelo
 
-            # 6. Intersección de la línea con el plano Z=0 en base_link
             t = -origin_base.point.z / vec_z
             if t < 0:
                 return None  # La intersección queda detrás de la cámara
@@ -257,8 +285,6 @@ class HumanDetectorNode(Node):
             p_base_x = origin_base.point.x + t * vec_x
             p_base_y = origin_base.point.y + t * vec_y
             p_base_z = 0.0  # Forzado en el suelo de base_link
-
-            # 7. Regresamos el punto al frame de la cámara para no romper tu pipeline
             p_base_stamped = PointStamped()
             p_base_stamped.header.frame_id = 'base_link'
             p_base_stamped.header.stamp = rclpy.time.Time().to_msg()

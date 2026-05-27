@@ -37,7 +37,7 @@ setup(
             'client = human_detection.pointing_client:main',
             'object_description = human_detection.object_description:main',
             'face_detect = human_detection.recog_face:main',
-            'wave_detector = human_detection.wave_detector:main',
+            'pose_detector = human_detection.pose_detector:main',
         ],
     },
 )
