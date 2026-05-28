@@ -59,6 +59,7 @@ class HumanDetectorNode(Node):
         # Servicio actualizado
         self.create_service(DetectPointing, '/human_detection/detect_wrist', self.handle_service)
         self.get_logger().info("[VISION NODE] Nodo listo. Esperando peticiones...")
+        self.tf_timer = self.create_timer(0.1, self.rpub_customer_tf)
 
     def _camera_info_callback(self, msg):
         self.camera_info = {'fx': msg.k[0], 'fy': msg.k[4], 'cx': msg.k[2], 'cy': msg.k[5]}
@@ -104,38 +105,40 @@ class HumanDetectorNode(Node):
             dy_l = kp[9][1] - kp[5][1]      
             extended_l = dx_l > UMBRAL_DIST 
 
-            l_up   = extended_l and dy_l < -UMBRAL_EXT 
+            #l_up   = extended_l and dy_l < -UMBRAL_EXT 
             l_ext  = extended_l and abs(dy_l) <= UMBRAL_EXT 
             l_down = extended_l and dy_l > UMBRAL_EXT    
         else:
-            l_up = l_ext = l_down = False
+            #l_up = l_ext = l_down = False
+            l_ext = l_down = False
 
         if kp[10][2] > CONF and kp[6][2] > CONF:
             dx_r = abs(kp[10][0] - kp[6][0])
             dy_r = kp[10][1] - kp[6][1]
             extended_r = dx_r > UMBRAL_DIST
 
-            r_up   = extended_r and dy_r < -UMBRAL_EXT
+            #r_up   = extended_r and dy_r < -UMBRAL_EXT
             r_ext  = extended_r and abs(dy_r) <= UMBRAL_EXT
             r_down = extended_r and dy_r > UMBRAL_EXT
         else:
-            r_up = r_ext = r_down = False
+            #r_up = r_ext = r_down = False
+            r_ext = r_down = False
 
         if side == "left":
-            if l_up:   return "left_up",   9
+            #if l_up:   return "left_up",   9
             if l_ext:  return "left_ext",  9
             if l_down: return "left_down", 9
 
         elif side == "right":
-            if r_up:   return "right_up",   10
+            #if r_up:   return "right_up",   10
             if r_ext:  return "right_ext",  10
             if r_down: return "right_down", 10
 
         else: 
-            if l_up:   return "left_up",   9
+            #if l_up:   return "left_up",   9
             if l_ext:  return "left_ext",  9
             if l_down: return "left_down", 9
-            if r_up:   return "right_up",   10
+            #if r_up:   return "right_up",   10
             if r_ext:  return "right_ext",  10
             if r_down: return "right_down", 10
 
@@ -165,7 +168,7 @@ class HumanDetectorNode(Node):
             kp = det['keypoints']
             
             # Filtrar según la acción solicitada
-            if action == "wave":
+            if action == "wave" or action == "waving":
                 detected_side, wrist_kp_idx = self.is_waving(kp, side)
             elif action == "raising" or action == "raise":
                 detected_side, wrist_kp_idx = self.is_raising(kp, side)
@@ -181,39 +184,50 @@ class HumanDetectorNode(Node):
 
         if target_person:
             kp = target_person['keypoints']
-            # Target pixel (en este caso la muñeca objetivo detectada)
+            
+            # muñeca objetivo
             tgt_x = int(kp[wrist_kp_idx][0])
             tgt_y = int(kp[wrist_kp_idx][1])
             
-            p3d = self.get_3d_point(tgt_x, tgt_y)
-            if p3d is None:
-                p3d = self._project_to_floor(tgt_x, tgt_y)
+            # centro de la persona entre ambos hombros
+            sh_l_x, sh_l_y = kp[5][0], kp[5][1]
+            sh_r_x, sh_r_y = kp[6][0], kp[6][1]
+            
+            pecho_x = int((sh_l_x + sh_r_x) / 2)
+            pecho_y = int((sh_l_y + sh_r_y) / 2)
+            
+            p3d_pecho = self.get_3d_point(pecho_x, pecho_y)
+            if p3d_pecho is None:
+                p3d_pecho = self._project_to_floor(pecho_x, pecho_y)
 
-            if p3d is not None:
+            if p3d_pecho is not None:
                 response.human_detected = True
                 response.point.header.stamp = self.last_cloud.header.stamp
                 response.point.header.frame_id = self.frame_id
-                response.point.point.x = float(p3d[0])
-                response.point.point.y = float(p3d[1])
-                response.point.point.z = float(p3d[2])
+                
+                response.point.point.x = float(p3d_pecho[0])
+                response.point.point.y = float(p3d_pecho[1])
+                response.point.point.z = float(p3d_pecho[2])
             
-                # Calcular la zona de la pantalla para la dirección
                 horiz = "center"
-                if tgt_x < 213: horiz = "left"
-                elif tgt_x > 426: horiz = "right"
+                if pecho_x < 213: horiz = "left"
+                elif pecho_x > 426: horiz = "right"
                 
-                dist_stat = "ideal" if 1.2 < p3d[2] < 2.8 else "reposition"
+                dist_stat = "ideal" if 1.2 < p3d_pecho[2] < 2.8 else "reposition"
                 
-                # El string de respuesta ahora incluye la acción, el brazo y la posición espacial
                 response.direction = f"{action}_{detected_side}_{horiz}_{dist_stat}"
                 clean_name = response.direction.replace(" ", "_")
                 
-                self.get_logger().info(f"Gesto detectado con éxito: {response.direction}")
-                self.publish_human_tf(p3d, clean_name, self.last_cloud.header.stamp)
+                self.get_logger().info(f"Gesto detectado. Calculando aproximación al pecho: {response.direction}")
                 
-            # Feedback Visual en la imagen debug
-            cv2.circle(frame, (tgt_x, tgt_y), 20, (0, 255, 0), -1)
-            cv2.putText(frame, f"{action}_{detected_side}", (tgt_x - 30, tgt_y - 30), 
+ 
+                self.publish_human_tf(p3d_pecho, clean_name, self.last_cloud.header.stamp)
+                
+
+            cv2.circle(frame, (tgt_x, tgt_y), 15, (0, 255, 0), -1) # Muñeca
+            cv2.circle(frame, (pecho_x, pecho_y), 15, (255, 0, 0), -1) # Pecho
+            cv2.line(frame, (pecho_x, pecho_y), (tgt_x, tgt_y), (255, 255, 0), 2)
+            cv2.putText(frame, f"{action} (Torso)", (pecho_x - 40, pecho_y - 20), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
             
             debug_img = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
@@ -321,7 +335,7 @@ class HumanDetectorNode(Node):
                 f_x, f_y = p_base.point.x, p_base.point.y
 
             t = TransformStamped()
-            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.stamp = stamp
             t.header.frame_id = 'base_link'
             t.child_frame_id = 'customer'
             t.transform.translation.x = float(f_x)
