@@ -196,7 +196,14 @@ class PersonTrackerNode(Node):
                 confirmed.sort(key=lambda t: abs(t.pos[0] - center_x))
                 #confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
                 self.target_id = confirmed[0].id
+                # Bug #3 fix: resetear suavizado al cambiar de persona
+                self.smoothed_pos = None
+                self.last_published_pos = None
                 self.get_logger().info(f" New Person: ID {self.target_id}")
+
+        # Bug #1 fix: re-buscar el track tras posible reasignación de target_id
+        if self.target_id is not None:
+            selected_track = next((t for t in self.tracks if t.id == self.target_id), None)
 
         if selected_track:
             raw_3d = self.get_3d_point(selected_track.pos[0], selected_track.pos[1])
