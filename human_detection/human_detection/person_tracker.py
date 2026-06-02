@@ -9,7 +9,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from vision_interfaces.msg import YoloDetections, YoloDetection
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool, Trigger
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, Bool
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 import tf2_geometry_msgs
@@ -85,6 +85,7 @@ class PersonTrackerNode(Node):
         self.pub_confidence = self.create_publisher(Float32, '/hri/human_tracking/confidence', 10)
         self.pub_look_at = self.create_publisher(PointStamped, '/hardware/head/look_at', 10)
         self.marker_pub = self.create_publisher(MarkerArray, '/human_detection/track_markers', 10)
+        self.pub_bypass = self.create_publisher(Bool, '/navigation/camera_obstacles/bypass', 10)
 
         self.srv_focus = self.create_service(SetBool, '/vision/focus', self.handle_focus_service)
         self.srv_focus_enable = self.create_service(Trigger,'/vision/focus/enable', self.handle_focus_enable_service)
@@ -97,8 +98,23 @@ class PersonTrackerNode(Node):
         
         self.get_logger().info(" human Tracker ready!")
 
+    def update_head_focus(self, target_point):
+        if self.tracking_enabled:
+            msg = PointStamped()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.header.frame_id = "base_link"
+            msg.point = target_point
+            self.pub_look_at.publish(msg)
+
+            bypass_msg = Bool()
+            bypass_msg.data = True
+            self.pub_bypass.publish(bypass_msg)
+
     def handle_focus_enable_service(self, request, response):
         self.tracking_enabled = True
+        msg_bypass = Bool()
+        msg_bypass.data = True
+        self.pub_bypass.publish(msg_bypass)
         self.cli_enable_continuous.call_async(SetBool.Request(data=True))
         response.success = True
         response.message = "Head tracking focus ENABLED"
@@ -107,6 +123,9 @@ class PersonTrackerNode(Node):
 
     def handle_focus_disable_service(self, request, response):
         self.tracking_enabled = False
+        bypass_msg = Bool()
+        bypass_msg.data = False
+        self.pub_bypass.publish(bypass_msg)
         self.cli_enable_continuous.call_async(SetBool.Request(data=False))
         response.success = True
         response.message = "Head tracking focus DISABLED"
@@ -190,6 +209,10 @@ class PersonTrackerNode(Node):
                 self.lost_frames = 0
 
         if self.target_id is None or self.lost_frames >= MAX_LOST_FRAMES:
+            bypass_msg = Bool()
+            bypass_msg.data = False
+            self.pub_bypass.publish(bypass_msg)
+            
             confirmed = [t for t in self.tracks if t.is_confirmed]
             if confirmed:
                 center_x = self.latest_pc.width / 2
@@ -235,6 +258,11 @@ class PersonTrackerNode(Node):
             
             # 2. Publicamos a look_at SOLO si el servicio está en True
             if self.tracking_enabled:
+
+                bypass_msg = Bool()
+                bypass_msg.data = True
+                self.pub_bypass.publish(bypass_msg)
+
                 if self.last_published_pos is None or \
                    np.linalg.norm(self.smoothed_pos - self.last_published_pos) > HEAD_MOVEMENT_THRESHOLD:
                     self.pub_look_at.publish(p_base)
