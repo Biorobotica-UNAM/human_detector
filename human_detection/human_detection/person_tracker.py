@@ -135,6 +135,9 @@ class PersonTrackerNode(Node):
     def handle_focus_service(self, request, response):
         """Manejador del servicio para activar/desactivar el seguimiento visual."""
         self.tracking_enabled = request.data
+        bypass_msg = Bool()
+        bypass_msg.data = self.tracking_enabled
+        self.pub_bypass.publish(bypass_msg)
         self.cli_enable_continuous.call_async(SetBool.Request(data=self.tracking_enabled))
         response.success = True
         status = "ENABLED" if self.tracking_enabled else "DISABLED"
@@ -209,9 +212,11 @@ class PersonTrackerNode(Node):
                 self.lost_frames = 0
 
         if self.target_id is None or self.lost_frames >= MAX_LOST_FRAMES:
-            bypass_msg = Bool()
-            bypass_msg.data = False
-            self.pub_bypass.publish(bypass_msg)
+            # Solo publicamos bypass=False si el follow está activo (si está desactivado, ya lo manejó el servicio)
+            if self.tracking_enabled:
+                bypass_msg = Bool()
+                bypass_msg.data = False
+                self.pub_bypass.publish(bypass_msg)
             
             confirmed = [t for t in self.tracks if t.is_confirmed]
             if confirmed:
@@ -256,9 +261,8 @@ class PersonTrackerNode(Node):
             self.pub_confidence.publish(conf_msg)
             self.pub_target.publish(p_base)
             
-            # 2. Publicamos a look_at SOLO si el servicio está en True
+            # Publicamos a look_at y bypass SOLO si el servicio está en True
             if self.tracking_enabled:
-
                 bypass_msg = Bool()
                 bypass_msg.data = True
                 self.pub_bypass.publish(bypass_msg)
@@ -267,6 +271,10 @@ class PersonTrackerNode(Node):
                    np.linalg.norm(self.smoothed_pos - self.last_published_pos) > HEAD_MOVEMENT_THRESHOLD:
                     self.pub_look_at.publish(p_base)
                     self.last_published_pos = self.smoothed_pos.copy()
+            else:
+                bypass_msg = Bool()
+                bypass_msg.data = False
+                self.pub_bypass.publish(bypass_msg)
 
             self._publish_marker(p_base, tid)
         except Exception as e:
