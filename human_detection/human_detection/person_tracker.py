@@ -199,7 +199,6 @@ class PersonTrackerNode(Node):
     def _process_output(self):
         if not self.tracks or self.latest_pc is None: return
 
-        # Lógica de Bloqueo (Filtra solo al ID elegido)
         selected_track = None
         if self.target_id is not None:
             selected_track = next((t for t in self.tracks if t.id == self.target_id), None)
@@ -212,7 +211,7 @@ class PersonTrackerNode(Node):
                 self.lost_frames = 0
 
         if self.target_id is None or self.lost_frames >= MAX_LOST_FRAMES:
-            # Solo publicamos bypass=False si el follow está activo (si está desactivado, ya lo manejó el servicio)
+            
             if self.tracking_enabled:
                 bypass_msg = Bool()
                 bypass_msg.data = False
@@ -224,12 +223,11 @@ class PersonTrackerNode(Node):
                 confirmed.sort(key=lambda t: abs(t.pos[0] - center_x))
                 #confirmed.sort(key=lambda t: abs(t.pos[0] - 320))
                 self.target_id = confirmed[0].id
-                # Bug #3 fix: resetear suavizado al cambiar de persona
                 self.smoothed_pos = None
                 self.last_published_pos = None
                 self.get_logger().info(f" New Person: ID {self.target_id}")
 
-        # Bug #1 fix: re-buscar el track tras posible reasignación de target_id
+    
         if self.target_id is not None:
             selected_track = next((t for t in self.tracks if t.id == self.target_id), None)
 
@@ -261,7 +259,6 @@ class PersonTrackerNode(Node):
             self.pub_confidence.publish(conf_msg)
             self.pub_target.publish(p_base)
             
-            # Publicamos a look_at y bypass SOLO si el servicio está en True
             if self.tracking_enabled:
                 bypass_msg = Bool()
                 bypass_msg.data = True
