@@ -201,13 +201,28 @@ class HumanDetectorNode(Node):
                 p3d_pecho = self._project_to_floor(pecho_x, pecho_y)
 
             if p3d_pecho is not None:
-                response.human_detected = True
-                response.point.header.stamp = self.last_cloud.header.stamp
-                response.point.header.frame_id = self.frame_id
-                
-                response.point.point.x = float(p3d_pecho[0])
-                response.point.point.y = float(p3d_pecho[1])
-                response.point.point.z = float(p3d_pecho[2])
+				response.human_detected = True
+
+				p_cam = PointStamped()
+
+				p_cam.point.header.stamp = self.last_cloud.header.stamp
+    			p_cam.point.header.frame_id = self.frame_id
+
+				p_cam.point.x = float(p3d_pecho[0])
+				p_cam.point.y = float(p3d_pecho[1])
+				p_cam.point.z = float(p3d_pecho[2])
+
+				transform = self.tf_buffer.lookup_transform(
+					"base_link",
+					p_cam.header.frame_id,
+					rclpy.time.Time(),
+					rclpy.duration.Duration(seconds=0.1),
+				)
+
+				p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
+
+				# Devolver SIEMPRE el punto en base_link
+				response.point = p_base
             
                 horiz = "center"
                 if pecho_x < 213: horiz = "left"
