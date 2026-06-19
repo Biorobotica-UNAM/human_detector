@@ -205,7 +205,7 @@ class HumanDetectorNode(Node):
 
                 p_cam = PointStamped()
                 p_cam.header.stamp = self.last_cloud.header.stamp
-                p_cam.header.frame_id = self.frame_id
+                p_cam.header.frame_id = self.last_cloud.header.frame_id
 
                 p_cam.point.x = float(p3d_pecho[0])
                 p_cam.point.y = float(p3d_pecho[1])
