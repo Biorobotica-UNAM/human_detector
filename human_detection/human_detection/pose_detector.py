@@ -201,29 +201,28 @@ class HumanDetectorNode(Node):
                 p3d_pecho = self._project_to_floor(pecho_x, pecho_y)
 
             if p3d_pecho is not None:
-				response.human_detected = True
+                response.human_detected = True
 
-				p_cam = PointStamped()
+                p_cam = PointStamped()
+                p_cam.header.stamp = self.last_cloud.header.stamp
+                p_cam.header.frame_id = self.frame_id
 
-				p_cam.point.header.stamp = self.last_cloud.header.stamp
-    			p_cam.point.header.frame_id = self.frame_id
+                p_cam.point.x = float(p3d_pecho[0])
+                p_cam.point.y = float(p3d_pecho[1])
+                p_cam.point.z = float(p3d_pecho[2])
 
-				p_cam.point.x = float(p3d_pecho[0])
-				p_cam.point.y = float(p3d_pecho[1])
-				p_cam.point.z = float(p3d_pecho[2])
+                transform = self.tf_buffer.lookup_transform(
+                    "base_link",
+                    p_cam.header.frame_id,
+                    rclpy.time.Time(),
+                    rclpy.duration.Duration(seconds=0.1),
+                )
 
-				transform = self.tf_buffer.lookup_transform(
-					"base_link",
-					p_cam.header.frame_id,
-					rclpy.time.Time(),
-					rclpy.duration.Duration(seconds=0.1),
-				)
+                p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
 
-				p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
+                # Devolver SIEMPRE el punto en base_link
+                response.point = p_base
 
-				# Devolver SIEMPRE el punto en base_link
-				response.point = p_base
-            
                 horiz = "center"
                 if pecho_x < 213: horiz = "left"
                 elif pecho_x > 426: horiz = "right"
@@ -234,10 +233,8 @@ class HumanDetectorNode(Node):
                 clean_name = response.direction.replace(" ", "_")
                 
                 self.get_logger().info(f"Gesto detectado. Calculando aproximación al pecho: {response.direction}")
-                
- 
+
                 self.publish_human_tf(p3d_pecho, clean_name, self.last_cloud.header.stamp)
-                
 
             cv2.circle(frame, (tgt_x, tgt_y), 15, (0, 255, 0), -1) # Muñeca
             cv2.circle(frame, (pecho_x, pecho_y), 15, (255, 0, 0), -1) # Pecho
