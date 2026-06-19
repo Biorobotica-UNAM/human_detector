@@ -352,12 +352,12 @@ class HumanDetectorNode(Node):
             t = TransformStamped()
             t.header.stamp = stamp
             t.header.frame_id = 'base_link'
-            t.child_frame_id = 'customer'
+            t.child_frame_id = name
             t.transform.translation.x = float(f_x)
             t.transform.translation.y = float(f_y)
-            t.transform.translation.z = 0.0 
+            t.transform.translation.z = 0.0
             t.transform.rotation.w = 1.0
-            
+
             self.customer_tf = t
             self.tf_broadcaster.sendTransform(t)
         except Exception as e:
@@ -365,8 +365,16 @@ class HumanDetectorNode(Node):
 
     def rpub_customer_tf(self):
         if self.customer_tf is not None:
-            self.customer_tf.header.stamp = self.get_clock().now().to_msg()
-            self.tf_broadcaster.sendTransform(self.customer_tf)        
+            try:
+                # Sync stamp with the latest map→base_link transform so that
+                # lookup_transform('map','customer',Time(0)) finds both hops
+                # at the exact same timestamp — no extrapolation needed.
+                tf_mb = self.tf_buffer.lookup_transform(
+                    'map', 'base_link', rclpy.time.Time())
+                self.customer_tf.header.stamp = tf_mb.header.stamp
+            except Exception:
+                self.customer_tf.header.stamp = self.get_clock().now().to_msg()
+            self.tf_broadcaster.sendTransform(self.customer_tf)
 
 def main(args=None):
     rclpy.init(args=args)
