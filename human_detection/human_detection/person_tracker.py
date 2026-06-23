@@ -149,16 +149,51 @@ class PersonTrackerNode(Node):
         self.latest_pc = msg
 
     def get_3d_point(self, u, v):
-        if self.latest_pc is None: return None
-        # Muestreo circular: Si el centro falla, busca en los alrededores
-        search_pattern = [(0,0), (3,3), (-3,-3), (3,-3), (-3,3), (0,5), (0,-5)]
-        for du, dv in search_pattern:
-            try:
-                offset = (int(v+dv) * self.latest_pc.row_step) + (int(u+du) * self.latest_pc.point_step)
-                x, y, z = struct.unpack('fff', self.latest_pc.data[offset:offset+12])
-                if not np.isnan(x) and x != 0: return (x, y, z)
-            except: continue
-        return None
+        if self.latest_pc is None:
+            return None
+
+        pc = self.latest_pc
+        if pc.width <= 0 or pc.height <= 0:
+            return None
+
+        field_offsets = {field.name: field.offset for field in pc.fields}
+        x_offset = field_offsets.get('x', 0)
+        y_offset = field_offsets.get('y', 4)
+        z_offset = field_offsets.get('z', 8)
+        endian = '>' if pc.is_bigendian else '<'
+
+        center_u = int(np.clip(round(u), 0, pc.width - 1))
+        center_v = int(np.clip(round(v), 0, pc.height - 1))
+
+        samples = []
+        for dv in range(-6, 7, 2):
+            for du in range(-6, 7, 2):
+                u_idx = int(np.clip(center_u + du, 0, pc.width - 1))
+                v_idx = int(np.clip(center_v + dv, 0, pc.height - 1))
+                offset = (v_idx * pc.row_step) + (u_idx * pc.point_step)
+
+                try:
+                    x = struct.unpack_from(endian + 'f', pc.data, offset + x_offset)[0]
+                    y = struct.unpack_from(endian + 'f', pc.data, offset + y_offset)[0]
+                    z = struct.unpack_from(endian + 'f', pc.data, offset + z_offset)[0]
+                except struct.error:
+                    continue
+
+                point = np.array([x, y, z], dtype=np.float32)
+                if not np.all(np.isfinite(point)):
+                    continue
+                if np.linalg.norm(point) < 0.05:
+                    continue
+                if np.any(np.abs(point) > 20.0):
+                    continue
+
+                samples.append(point)
+
+        if not samples:
+            return None
+
+        median_point = np.median(np.vstack(samples), axis=0)
+        return tuple(float(coord) for coord in median_point)
 
     def callback(self, msg):
         current_dets = []
