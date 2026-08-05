@@ -16,7 +16,7 @@ import tf2_geometry_msgs
 
 
 MIN_CONFIDENCE = 0.85      # 85% de confianza mínimo
-SMOOTHING_FACTOR = 0.18     # Suavizado de movimiento (0.1 a 0.5) menor = más suave/lento, mayor = más reactivo/rapido
+SMOOTHING_FACTOR = 0.12    # Suavizado de movimiento (0.1 a 0.5) menor = más suave/lento, mayor = más reactivo/rapido
 MAX_LOST_FRAMES = 45       # ~1.5 segundos de espera antes de buscar a otro humano
 MATCH_THRESHOLD = 400.0    # Umbral de asociación entre frames
 
