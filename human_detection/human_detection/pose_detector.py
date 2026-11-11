@@ -189,20 +189,28 @@ class HumanDetectorNode(Node):
             tgt_x = int(kp[wrist_kp_idx][0])
             tgt_y = int(kp[wrist_kp_idx][1])
             
-            # centro de la persona entre ambos hombros
-            sh_l_x, sh_l_y = kp[5][0], kp[5][1]
-            sh_r_x, sh_r_y = kp[6][0], kp[6][1]
-            
-            pecho_x = int((sh_l_x + sh_r_x) / 2)
-            pecho_y = int((sh_l_y + sh_r_y) / 2)
-            
-            p3d_pecho = self.get_3d_point(pecho_x, pecho_y)
+            # ROI del torso (hombros -> caderas). Se usa para estimar la
+            # posición 3D con la superficie MÁS CERCANA de la persona, no con
+            # un solo píxel que puede caer en la pared/fondo detrás de ella.
+            roi = self._torso_roi(target_person, frame.shape[1], frame.shape[0])
+            pecho_x = int((roi[0] + roi[2]) / 2)
+            pecho_y = int((roi[1] + roi[3]) / 2)
+
+            p3d_pecho = self.get_person_3d_point(roi)
             if p3d_pecho is None:
-                p3d_pecho = self._project_to_floor(pecho_x, pecho_y)
+                # Fallback: proyectar al piso los PIES (no el pecho). Proyectar
+                # el pecho al plano Z=0 genera un punto detrás de la persona.
+                feet_px = self._feet_pixel(target_person, frame.shape[0])
+                if feet_px is not None:
+                    self.get_logger().warn(
+                        "[VISION NODE] Sin profundidad válida en el torso; usando proyección de los pies al piso")
+                    p3d_pecho = self._project_to_floor(*feet_px)
+                else:
+                    self.get_logger().warn(
+                        "[VISION NODE] Sin profundidad válida y pies fuera de imagen; se descarta la detección")
 
+            p_base = None
             if p3d_pecho is not None:
-                response.human_detected = True
-
                 p_cam = PointStamped()
                 p_cam.header.stamp = self.last_cloud.header.stamp
                 p_cam.header.frame_id = self.last_cloud.header.frame_id
@@ -211,14 +219,19 @@ class HumanDetectorNode(Node):
                 p_cam.point.y = float(p3d_pecho[1])
                 p_cam.point.z = float(p3d_pecho[2])
 
-                transform = self.tf_buffer.lookup_transform(
-                    "base_link",
-                    p_cam.header.frame_id,
-                    rclpy.time.Time(),
-                    rclpy.duration.Duration(seconds=0.1),
-                )
+                try:
+                    transform = self.tf_buffer.lookup_transform(
+                        "base_link",
+                        p_cam.header.frame_id,
+                        rclpy.time.Time(),
+                        rclpy.duration.Duration(seconds=0.1),
+                    )
+                    p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
+                except Exception as e:
+                    self.get_logger().error(f"[VISION NODE] TF camera->base_link falló: {e}")
 
-                p_base = tf2_geometry_msgs.do_transform_point(p_cam, transform)
+            if p_base is not None:
+                response.human_detected = True
 
                 # Devolver SIEMPRE el punto en base_link
                 response.point = p_base
@@ -236,6 +249,7 @@ class HumanDetectorNode(Node):
 
                 self.publish_human_tf(p3d_pecho, clean_name, self.last_cloud.header.stamp)
 
+            cv2.rectangle(frame, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (0, 0, 255), 2) # ROI torso
             cv2.circle(frame, (tgt_x, tgt_y), 15, (0, 255, 0), -1) # Muñeca
             cv2.circle(frame, (pecho_x, pecho_y), 15, (255, 0, 0), -1) # Pecho
             cv2.line(frame, (pecho_x, pecho_y), (tgt_x, tgt_y), (255, 255, 0), 2)
@@ -246,6 +260,140 @@ class HumanDetectorNode(Node):
             self.human_pose_image_pub.publish(debug_img)
 
         return response
+
+    # ------------------------------------------------------------------
+    # Estimación 3D robusta de la persona
+    # ------------------------------------------------------------------
+
+    def _torso_roi(self, det, img_w, img_h):
+        """ROI (u1, v1, u2, v2) del torso: hombros -> caderas, recortada hacia
+        adentro para no tocar bordes (donde la nube mezcla persona y fondo).
+        Si los hombros no son confiables usa la parte superior-central del bbox."""
+        kp = det['keypoints']
+        bx1, by1, bx2, by2 = det['box']
+
+        if kp[5][2] > CONF and kp[6][2] > CONF:
+            xs = [kp[5][0], kp[6][0]]
+            ys = [kp[5][1], kp[6][1]]
+            hips = [i for i in (11, 12) if kp[i][2] > CONF]
+            for i in hips:
+                xs.append(kp[i][0])
+                ys.append(kp[i][1])
+            u1, u2 = min(xs), max(xs)
+            v1 = min(ys)
+            if hips:
+                v2 = max(ys)
+            else:
+                # Sin caderas: bajar ~1 ancho de hombros desde los hombros
+                v2 = v1 + max(0.8 * (u2 - u1), 20.0)
+        else:
+            bw, bh = bx2 - bx1, by2 - by1
+            u1, u2 = bx1 + 0.25 * bw, bx2 - 0.25 * bw
+            v1, v2 = by1 + 0.20 * bh, by1 + 0.55 * bh
+
+        # Garantizar tamaño mínimo (persona de perfil -> hombros muy juntos)
+        if (u2 - u1) < 16:
+            cu = (u1 + u2) / 2.0
+            u1, u2 = cu - 8, cu + 8
+        if (v2 - v1) < 16:
+            cv_ = (v1 + v2) / 2.0
+            v1, v2 = cv_ - 8, cv_ + 8
+
+        # Recortar márgenes hacia adentro
+        w, h = u2 - u1, v2 - v1
+        u1, u2 = u1 + 0.15 * w, u2 - 0.15 * w
+        v1, v2 = v1 + 0.10 * h, v2 - 0.10 * h
+
+        u1 = int(np.clip(u1, 0, img_w - 1)); u2 = int(np.clip(u2, 0, img_w - 1))
+        v1 = int(np.clip(v1, 0, img_h - 1)); v2 = int(np.clip(v2, 0, img_h - 1))
+        return (u1, v1, max(u2, u1 + 1), max(v2, v1 + 1))
+
+    def _roi_points(self, roi, step=3):
+        """Regresa Nx3 (camera frame) de puntos válidos de la nube dentro de la ROI."""
+        cloud = self.last_cloud
+        if cloud is None or cloud.height <= 1:
+            return None  # nube no organizada
+
+        offs = {f.name: f.offset for f in cloud.fields}
+        if not all(k in offs for k in ('x', 'y', 'z')):
+            return None
+
+        W, H = cloud.width, cloud.height
+        u1, v1, u2, v2 = roi
+        u1, u2 = max(0, u1), min(W, u2)
+        v1, v2 = max(0, v1), min(H, v2)
+        if u2 <= u1 or v2 <= v1:
+            return None
+
+        us = np.arange(u1, u2, step)
+        vs = np.arange(v1, v2, step)
+        buf = np.frombuffer(cloud.data, dtype=np.uint8).reshape(H, cloud.row_step)
+        rows = buf[vs]  # (nv, row_step)
+        dtype = np.dtype('>f4' if cloud.is_bigendian else '<f4')
+
+        def channel(off):
+            idx = (us * cloud.point_step + off)[:, None] + np.arange(4)[None, :]
+            raw = np.ascontiguousarray(rows[:, idx])  # (nv, nu, 4)
+            return raw.view(dtype).reshape(len(vs), len(us))
+
+        pts = np.stack([channel(offs['x']), channel(offs['y']), channel(offs['z'])], axis=-1).reshape(-1, 3)
+        pts = pts[np.all(np.isfinite(pts), axis=1)]
+        return pts
+
+    def get_person_3d_point(self, roi):
+        """Punto 3D (camera frame) de la superficie frontal de la persona.
+
+        Igual que el fix de BboxToPose (FindPerson): si la distribución de
+        profundidades es amplia (persona + pared/fondo detrás), se toma el
+        CLÚSTER MÁS CERCANO con suficientes puntos en lugar de la mediana o el
+        promedio, que se van hacia atrás y mandan al robot a atravesar a la
+        persona."""
+        pts = self._roi_points(roi)
+        if pts is None or len(pts) == 0:
+            return None
+
+        rng = np.linalg.norm(pts, axis=1)
+        valid = rng > 0.15
+        pts, rng = pts[valid], rng[valid]
+        if len(rng) < 8:
+            return None
+
+        srt = np.sort(rng)
+        n = len(srt)
+        q10, q75 = srt[n * 10 // 100], srt[n * 75 // 100]
+        ref = srt[n // 2]
+
+        if (q75 - q10) > 0.35:
+            min_cluster = max(6, n // 10)
+            for i in range(n):
+                j = np.searchsorted(srt, srt[i] + 0.25, side='right')
+                count = j - i
+                if count >= min_cluster:
+                    ref = srt[i + count // 2]
+                    break
+
+        inliers = pts[np.abs(rng - ref) < 0.18]
+        if len(inliers) < 6:
+            return None
+
+        p = np.median(inliers, axis=0)
+        self.get_logger().info(
+            f"[VISION NODE] Persona 3D: ref_range={ref:.2f} (q10={q10:.2f} med={srt[n // 2]:.2f} "
+            f"q75={q75:.2f}) inliers={len(inliers)}/{n}")
+        return p
+
+    def _feet_pixel(self, det, img_h):
+        """Pixel de los pies (tobillos o borde inferior del bbox) para proyectar al piso."""
+        kp = det['keypoints']
+        ankles = [kp[i] for i in (15, 16) if kp[i][2] > CONF]
+        if ankles:
+            u = float(np.mean([a[0] for a in ankles]))
+            v = float(np.max([a[1] for a in ankles]))
+            return (u, v)
+        bx1, by1, bx2, by2 = det['box']
+        if by2 < img_h - 5:  # el bbox no está cortado por el borde inferior
+            return ((bx1 + bx2) / 2.0, float(by2))
+        return None
 
     def get_3d_point(self, u, v):
         if self.last_cloud is None: return None
